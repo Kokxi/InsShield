@@ -29,13 +29,15 @@ async def upload_files(files: List[UploadFile] = File(...)):
             file_path = await save_upload(file)
 
             if is_pdf_file(file_path):
-                images = pdf_to_images(file_path)
+                images = pdf_to_images(file_path, max_pages=2)
             else:
                 images = [file_path]
 
-            # 只取第一页作判断（保单首页）
-            first_image = images[0] if images else file_path
-            ocr_results = ocr.recognize(first_image)
+            # 扫描前2页（PDF）或唯一页（图片），任一页命中即视为保单
+            ocr_results = []
+            for page_image in images:
+                page_results = ocr.recognize(page_image)
+                ocr_results.extend(page_results)
 
             if not ocr_results:
                 results.append(PolicyResult(
@@ -73,11 +75,12 @@ async def upload_files(files: List[UploadFile] = File(...)):
                 error_message=str(e),
             ))
 
-    # 清理上传文件
-    cleanup_files()
-
-    stats = compute_stats(results)
-    return UploadResponse(results=results, stats=stats)
+    try:
+        stats = compute_stats(results)
+        return UploadResponse(results=results, stats=stats)
+    finally:
+        # 确保即使异常也会清理上传文件
+        cleanup_files()
 
 
 @router.post("/api/export/excel")

@@ -25,8 +25,9 @@ async def save_upload(file: UploadFile) -> Path:
     """保存上传文件到临时目录，返回文件路径"""
     ensure_upload_dir()
     ext = validate_file(file.filename or "upload", file.size or 0)
-    # 保留原始文件名，加UUID前缀防冲突
-    safe_name = f"{uuid.uuid4().hex}_{file.filename}"
+    # 提取纯文件名，防止路径穿越（../../etc/passwd → passwd）
+    basename = Path(file.filename or "upload").name
+    safe_name = f"{uuid.uuid4().hex}_{basename}"
     dest = Path(UPLOAD_DIR) / safe_name
     content = await file.read()
     dest.write_bytes(content)
