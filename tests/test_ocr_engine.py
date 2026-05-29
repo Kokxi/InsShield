@@ -33,3 +33,19 @@ class TestOcrEngine:
     def test_initial_state(self):
         e = OcrEngine()
         assert e._ocr is None
+
+
+class TestOcrEngineReal:
+    """真实图片集成测试（需 doc/test1.png 存在）"""
+
+    def test_real_image_recognize(self):
+        img_path = Path(__file__).parent.parent / "doc" / "test1.png"
+        if not img_path.exists():
+            pytest.skip("test image not found: doc/test1.png")
+        engine = OcrEngine()
+        results = engine.recognize(img_path)
+        assert len(results) > 50, f"Expected >50 text blocks, got {len(results)}"
+        first = results[0]
+        assert isinstance(first.text, str) and len(first.text) > 0
+        assert 0.0 <= first.confidence <= 1.0
+        assert len(first.bbox) == 4  # 4 corners

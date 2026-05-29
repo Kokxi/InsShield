@@ -1,8 +1,8 @@
 fastapi==0.136.3
 uvicorn[standard]==0.48.0
 python-multipart==0.0.29
-paddlepaddle==3.3.1
-paddleocr==3.6.0
+# paddlepaddle==3.3.1        # 已替换为 rapidocr_onnxruntime
+# paddleocr==3.6.0           # 已替换为 rapidocr_onnxruntime
 PyMuPDF==1.27.2
 openpyxl==3.1.5
 pytest==8.3.0
