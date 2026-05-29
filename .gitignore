@@ -5,3 +5,4 @@ uploads/
 server.log
 *.result
 output.txt
+temp/  
