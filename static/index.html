@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>保单敏感信息扫描工具</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>📄 保单敏感信息扫描工具</h1>
+    <p class="subtitle">上传PDF或图片保单，自动识别提取关键字段并统计敏感信息</p>
+  </header>
+
+  <!-- 上传区域 -->
+  <section class="upload-section">
+    <div class="drop-zone" id="dropZone">
+      <p class="drop-text">拖拽文件到此区域，或点击选择文件</p>
+      <p class="drop-hint">支持 PDF、JPG、JPEG、PNG · 可一次选择多个文件</p>
+      <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png" hidden>
+      <button class="btn" id="selectBtn">选择文件</button>
+    </div>
+    <div id="fileList" class="file-list"></div>
+    <button class="btn btn-primary" id="uploadBtn" disabled>开始识别</button>
+  </section>
+
+  <!-- 进度指示 -->
+  <section id="progressSection" class="progress-section" hidden>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <p id="progressText" class="progress-text">正在识别...</p>
+  </section>
+
+  <!-- 统计概览 -->
+  <section id="statsSection" class="stats-section" hidden>
+    <div class="stats-card">
+      <span class="stats-number" id="statsCount">0</span>
+      <span class="stats-label">敏感信息条数（去重后被保人）</span>
+    </div>
+  </section>
+
+  <!-- 结果表格 -->
+  <section id="resultSection" class="result-section" hidden>
+    <div class="result-toolbar">
+      <h2>识别结果</h2>
+      <div class="toolbar-buttons">
+        <button class="btn" id="exportExcelBtn">导出 Excel</button>
+        <button class="btn" id="exportJsonBtn">导出 JSON</button>
+        <button class="btn" id="clearBtn">清空</button>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table id="resultTable">
+        <thead>
+          <tr>
+            <th>文件名</th>
+            <th>状态</th>
+            <th>保险公司</th>
+            <th>险种</th>
+            <th>保单号</th>
+            <th>投保人</th>
+            <th>被保人</th>
+            <th>受益人</th>
+            <th>保费</th>
+            <th>交费方式</th>
+            <th>生效日期</th>
+            <th>保险期间</th>
+            <th>销售经理</th>
+          </tr>
+        </thead>
+        <tbody id="resultBody">
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
