@@ -66,7 +66,23 @@
       </div>
     </div>
 
-    <!-- 表格1：投保人信息表 -->
+    <!-- 表格1：保单信息表 -->
+    <h3 class="table-title">📋 保单信息 <span class="section-hint">（所有保单）</span></h3>
+    <div class="table-wrapper">
+      <table id="policyInfoTable">
+        <thead>
+          <tr>
+            <th>文件名</th>
+            <th>险种类型</th>
+            <th>保险公司</th>
+            <th>是否有效</th>
+          </tr>
+        </thead>
+        <tbody id="policyInfoBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 表格2：投保人信息表 -->
     <h3 class="table-title">📋 投保人信息 <span class="section-hint">（所有保单）</span></h3>
     <div class="table-wrapper">
       <table id="applicantTable">
@@ -89,7 +105,7 @@
       </table>
     </div>
 
-    <!-- 表格2：被保人信息表 -->
+    <!-- 表格3：被保人信息表 -->
     <h3 class="table-title">👤 被保人信息 <span class="section-hint">（仅人身险）</span></h3>
     <div class="table-wrapper">
       <table id="insuredTable">
