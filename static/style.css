@@ -47,6 +47,7 @@ header h1 { font-size: 24px; color: #0984e3; }
 }
 .stats-card-property .stats-number { color: #00b894; }
 .stats-card-unknown .stats-number { color: #fdcb6e; }
+.stats-card-total .stats-number { color: #636e72; }
 .stats-number { font-size: 48px; font-weight: bold; color: #0984e3; display: block; }
 .stats-label { font-size: 14px; color: #636e72; margin-top: 4px; }
 

@@ -15,6 +15,7 @@ const statsSection = document.getElementById('statsSection');
 const lifeStatsCount = document.getElementById('lifeStatsCount');
 const propertyStatsCount = document.getElementById('propertyStatsCount');
 const unknownStatsCount = document.getElementById('unknownStatsCount');
+const totalStatsCount = document.getElementById('totalStatsCount');
 const resultSection = document.getElementById('resultSection');
 const applicantBody = document.getElementById('applicantBody');
 const insuredBody = document.getElementById('insuredBody');
@@ -93,7 +94,7 @@ uploadBtn.addEventListener('click', async () => {
     currentStats = data.stats;
 
     // 渲染统计
-    renderStats(data.stats);
+    renderStats(data.stats, data.results.length);
 
     // 渲染双表格
     renderApplicantTable(data.results);
@@ -111,11 +112,12 @@ uploadBtn.addEventListener('click', async () => {
   }
 });
 
-function renderStats(stats) {
+function renderStats(stats, totalCount) {
   statsSection.hidden = false;
   lifeStatsCount.textContent = stats.life_insured_count;
   propertyStatsCount.textContent = stats.property_count;
   unknownStatsCount.textContent = stats.unknown_count;
+  totalStatsCount.textContent = totalCount;
 }
 
 function getCategory(category) {
