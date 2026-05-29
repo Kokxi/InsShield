@@ -1,0 +1,9 @@
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+python-multipart==0.0.17
+paddlepaddle==2.6.1
+paddleocr==2.8.1
+PyMuPDF==1.24.0
+openpyxl==3.1.5
+pytest==8.3.0
+aiofiles==24.1.0
