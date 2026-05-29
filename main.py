@@ -3,16 +3,28 @@ from pathlib import Path
 import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from app.router import router
 
 app = FastAPI(title="保单敏感信息扫描工具")
 
-# 静态文件（前端页面）
 static_dir = Path(__file__).parent / "static"
-if static_dir.exists():
-    app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="static")
+index_html = static_dir / "index.html"
 
+# API 路由优先
 app.include_router(router)
+
+# 静态文件（CSS/JS），不包含 index.html
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+
+@app.get("/")
+async def serve_index():
+    """返回前端主页面"""
+    if index_html.exists():
+        return FileResponse(str(index_html))
+    return {"message": "Frontend not built yet"}
 
 
 if __name__ == "__main__":
