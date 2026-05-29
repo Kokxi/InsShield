@@ -24,6 +24,10 @@ const policyInfoBody = document.getElementById('policyInfoBody');
 const exportExcelBtn = document.getElementById('exportExcelBtn');
 const exportJsonBtn = document.getElementById('exportJsonBtn');
 const clearBtn = document.getElementById('clearBtn');
+const detailModal = document.getElementById('detailModal');
+const modalTitle = document.getElementById('modalTitle');
+const modalBody = document.getElementById('modalBody');
+const modalCloseBtn = document.getElementById('modalCloseBtn');
 
 let selectedFiles = [];
 
@@ -148,15 +152,27 @@ function buildPolicyDetails(fields) {
 function renderPolicyInfoTable(results) {
   policyInfoBody.innerHTML = results
     .filter(r => r.is_policy)
-    .map(r => `
+    .map((r, i) => `
       <tr>
         <td>${escapeHtml(r.filename)}</td>
         <td>${getCategory(r.fields.insurance_category)}</td>
         <td>${escapeHtml(r.fields.insurance_company || '')}</td>
         <td class="status-ok">✅ 有效</td>
-        <td class="policy-detail">${escapeHtml(buildPolicyDetails(r.fields))}</td>
+        <td><button class="btn btn-detail" data-index="${i}">查看详情</button></td>
       </tr>
     `).join('');
+
+  // 将原始结果存到全局，供弹窗使用
+  window._policyResults = results.filter(r => r.is_policy);
+
+  // 绑定详情按钮事件
+  document.querySelectorAll('.btn-detail').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const idx = parseInt(this.dataset.index);
+      const r = window._policyResults[idx];
+      if (r) showDetailModal(r);
+    });
+  });
 }
 
 // 渲染投保人信息表（所有状态为ok的保单，每文件一行）
@@ -242,6 +258,40 @@ function renderInsuredTable(results) {
     </tr>
   `).join('');
 }
+
+// ===== 详情弹窗 =====
+
+/** 展示保单详情弹窗 */
+function showDetailModal(result) {
+  const fields = result.fields || {};
+  const category = fields.insurance_category
+    ? getCategory(fields.insurance_category) : '—';
+
+  modalTitle.textContent = `保单详情 — ${result.filename}`;
+  modalBody.innerHTML = `
+    <div class="detail-summary">
+      文件名: ${escapeHtml(result.filename)} |
+      险种: ${escapeHtml(category)} |
+      状态: <span class="status-${result.status}">${result.status}</span>
+    </div>
+    <hr>
+    <pre class="ocr-raw-text">${escapeHtml(result.raw_text || '无识别结果')}</pre>
+  `;
+
+  detailModal.classList.add('open');
+}
+
+// 关闭抽屉
+modalCloseBtn.addEventListener('click', () => { detailModal.classList.remove('open'); });
+detailModal.addEventListener('click', (e) => {
+  if (e.target === detailModal) detailModal.classList.remove('open');
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') detailModal.classList.remove('open');
+});
+
+// 点击抽屉面板内部不冒泡到遮罩
+document.querySelector('.drawer-panel')?.addEventListener('click', (e) => e.stopPropagation());
 
 // 导出Excel
 exportExcelBtn.addEventListener('click', async () => {
