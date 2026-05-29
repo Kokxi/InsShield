@@ -26,6 +26,7 @@ class PolicyResult(BaseModel):
     fields: PolicyFields = Field(default_factory=PolicyFields, description="提取字段")
     status: str = Field(default="ok", description="状态: ok / low_confidence / not_policy / error")
     error_message: Optional[str] = Field(None, description="错误信息")
+    raw_text: str = Field(default="", description="OCR 原始全文（所有文字块按阅读顺序拼接）")
 
 
 class SensitiveStats(BaseModel):
