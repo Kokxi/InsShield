@@ -73,12 +73,67 @@ tr:hover td { background: #f8f9fa; }
 .status-error { color: #d63031; }
 .status-low_confidence { color: #e17055; }
 
-/* 详情列：宽文本换行 */
-.policy-detail {
-  white-space: normal;
-  word-break: break-all;
-  max-width: 500px;
-  font-size: 12px;
+/* 右侧抽屉 */
+.drawer-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5); z-index: 1000;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.drawer-overlay.open {
+  opacity: 1; pointer-events: auto;
+}
+.drawer-panel {
+  position: fixed; top: 0; right: 0; bottom: 0;
+  width: 480px; max-width: 90vw;
+  background: white; z-index: 1001;
+  box-shadow: -4px 0 24px rgba(0,0,0,0.15);
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  display: flex; flex-direction: column;
+}
+.drawer-overlay.open .drawer-panel {
+  transform: translateX(0);
+}
+.drawer-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 20px; border-bottom: 1px solid #dfe6e9; flex-shrink: 0;
+}
+.drawer-header span { font-size: 16px; font-weight: 600; }
+.drawer-close {
+  background: none; border: none; font-size: 24px; cursor: pointer;
+  color: #636e72; line-height: 1;
+}
+.drawer-close:hover { color: #2d3436; }
+.drawer-body { padding: 16px 20px; overflow-y: auto; flex: 1; }
+
+/* 详情抽屉内容 */
+.detail-summary {
+  font-size: 13px;
   color: #636e72;
+  padding: 8px 0;
   line-height: 1.6;
 }
+.detail-summary .status-ok { color: #00b894; }
+.detail-summary .status-not_policy { color: #fdcb6e; }
+.detail-summary .status-error { color: #d63031; }
+
+.ocr-raw-text {
+  background: #fafafa;
+  border: 1px solid #dfe6e9;
+  border-radius: 8px;
+  padding: 16px;
+  font-family: 'Courier New', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 400px;
+  overflow-y: auto;
+  margin-top: 12px;
+}
+
+/* 详情按钮 */
+.btn-detail { font-size: 12px; padding: 4px 12px; }
+
+
