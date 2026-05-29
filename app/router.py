@@ -39,6 +39,9 @@ async def upload_files(files: List[UploadFile] = File(...)):
                 page_results = ocr.recognize(page_image)
                 ocr_results.extend(page_results)
 
+            # 拼接 OCR 原始全文（每个文字块一行），供详情抽屉展示
+            raw_text = "\n".join(r.text for r in ocr_results if r.text.strip())
+
             if not ocr_results:
                 results.append(PolicyResult(
                     filename=file.filename or "unknown",
@@ -54,6 +57,7 @@ async def upload_files(files: List[UploadFile] = File(...)):
                     filename=file.filename or "unknown",
                     is_policy=False,
                     status="not_policy",
+                    raw_text=raw_text,
                 ))
                 continue
 
@@ -67,6 +71,7 @@ async def upload_files(files: List[UploadFile] = File(...)):
                 is_policy=True,
                 fields=fields,
                 status="ok",
+                raw_text=raw_text,
             )
             results.append(policy_result)
 
