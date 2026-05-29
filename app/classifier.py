@@ -1,5 +1,5 @@
 """险种分类器 — 根据险种名称识别保险大类"""
-from typing import Optional
+from typing import Optional, List
 
 
 # 分类规则表（按优先级从高到低）
@@ -8,6 +8,18 @@ CLASSIFIER_RULES: list[tuple[str, list[str]]] = [
     ("health", ["健康", "医疗", "重疾", "疾病", "防癌", "护理", "医保"]),
     ("accident", ["意外伤害", "人身意外", "交通意外", "旅游意外", "意外", "驾意"]),
     ("car", ["车险", "机动车", "交强", "三者险", "车损", "商业车险"]),
+    ("property", [
+        "财产保险", "企财", "家财", "责任保险", "责任险",
+        "货运", "工程保险", "保证保险", "信用保险", "农业保险",
+    ]),
+]
+
+# 全文本回退分类关键词（不含"人寿""终身"等公司名高频词，防止"中国人寿"被误判为life）
+FALLBACK_CLASSIFIER_RULES: list[tuple[str, list[str]]] = [
+    ("car", ["交强", "机动车", "三者险", "车损", "商业车险", "车险"]),
+    ("life", ["寿险", "定期寿", "两全", "年金", "万能", "投连", "分红"]),
+    ("health", ["医疗", "重疾", "防癌", "护理", "健康险", "医保"]),
+    ("accident", ["意外伤害", "人身意外", "交通意外", "旅游意外", "驾意"]),
     ("property", [
         "财产保险", "企财", "家财", "责任保险", "责任险",
         "货运", "工程保险", "保证保险", "信用保险", "农业保险",
@@ -38,6 +50,21 @@ def classify_insurance(policy_type: Optional[str]) -> str:
     for category, keywords in CLASSIFIER_RULES:
         for kw in keywords:
             if kw in text:
+                return category
+    return "unknown"
+
+
+def classify_from_full_text(full_text: str) -> str:
+    """根据整段OCR文本识别险种大类（当显式险种字段缺失时的fallback）。
+
+    使用受限关键词集 FALLBACK_CLASSIFIER_RULES，排除"人寿"等公司名常见词，
+    防止"中国人寿""平安人寿"等公司名导致误判。
+    """
+    if not full_text:
+        return "unknown"
+    for category, keywords in FALLBACK_CLASSIFIER_RULES:
+        for kw in keywords:
+            if kw in full_text:
                 return category
     return "unknown"
 

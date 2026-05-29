@@ -126,6 +126,22 @@ function getCategory(category) {
   return CATEGORY_NAMES[category] || '未知';
 }
 
+function buildPolicyDetails(fields) {
+  const parts = [];
+  if (fields.insurance_company) parts.push(`保险公司: ${fields.insurance_company}`);
+  if (fields.policy_type) parts.push(`险种: ${fields.policy_type}`);
+  if (fields.policy_number) parts.push(`保单号: ${fields.policy_number}`);
+  if (fields.applicant) parts.push(`投保人: ${fields.applicant}`);
+  if (fields.insured) parts.push(`被保人: ${fields.insured}`);
+  if (fields.beneficiary) parts.push(`受益人: ${fields.beneficiary}`);
+  if (fields.premium) parts.push(`保费: ${fields.premium}`);
+  if (fields.payment_method) parts.push(`交费方式: ${fields.payment_method}`);
+  if (fields.effective_date) parts.push(`生效日期: ${fields.effective_date}`);
+  if (fields.insurance_period) parts.push(`保险期间: ${fields.insurance_period}`);
+  if (fields.sales_manager) parts.push(`销售经理: ${fields.sales_manager}`);
+  return parts.join(' | ');
+}
+
 // 渲染保单信息表（所有 is_policy=true 的文件）
 function renderPolicyInfoTable(results) {
   policyInfoBody.innerHTML = results
@@ -136,6 +152,7 @@ function renderPolicyInfoTable(results) {
         <td>${getCategory(r.fields.insurance_category)}</td>
         <td>${escapeHtml(r.fields.insurance_company || '')}</td>
         <td class="status-ok">✅ 有效</td>
+        <td class="policy-detail">${escapeHtml(buildPolicyDetails(r.fields))}</td>
       </tr>
     `).join('');
 }
