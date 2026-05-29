@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>保单智能扫描工具 - 需求分析</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f5f6fa; color: #2d3436; padding: 20px; }
+  .container { max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 24px; margin-bottom: 6px; color: #0984e3; }
+  .subtitle { color: #636e72; font-size: 14px; margin-bottom: 24px; }
+  .row { display: flex; gap: 20px; flex-wrap: wrap; }
+  .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); flex: 1; min-width: 300px; }
+  .card h2 { font-size: 16px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #dfe6e9; color: #0984e3; }
+  .card h3 { font-size: 14px; margin: 12px 0 6px; color: #636e72; }
+  .tag { display: inline-block; background: #dfe6e9; padding: 2px 10px; border-radius: 12px; font-size: 12px; color: #636e72; margin: 2px; }
+  .tag.blue { background: #74b9ff; color: white; }
+  .tag.green { background: #55efc4; color: #2d3436; }
+  .tag.red { background: #ff7675; color: white; }
+  .tag.orange { background: #fdcb6e; color: #2d3436; }
+  ul { padding-left: 18px; font-size: 14px; line-height: 1.8; }
+  .highlight { background: #ffeaa7; padding: 0 4px; }
+  .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
+  .flow-step { background: #0984e3; color: white; padding: 10px 16px; border-radius: 8px; font-size: 13px; text-align: center; min-width: 80px; }
+  .flow-arrow { color: #b2bec3; font-size: 20px; }
+  .ref-img { width: 100%; border-radius: 8px; border: 1px solid #dfe6e9; cursor: pointer; }
+  .img-container { position: relative; }
+  .img-container .zoom-hint { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.6); color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; }
+  .diff-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0; }
+  .diff-table th { background: #dfe6e9; padding: 8px 10px; text-align: left; }
+  .diff-table td { padding: 8px 10px; border-bottom: 1px solid #dfe6e9; }
+  .diff-table .bad { color: #d63031; }
+  .diff-table .good { color: #00b894; }
+  .question-box { background: #dfe6e9; border-left: 4px solid #0984e3; padding: 14px; border-radius: 0 8px 8px 0; margin: 12px 0; font-size: 14px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 10px 0; }
+  .stat-item { text-align: center; padding: 14px; background: #f8f9fa; border-radius: 8px; }
+  .stat-item .num { font-size: 28px; font-weight: bold; color: #0984e3; }
+  .stat-item .label { font-size: 12px; color: #636e72; margin-top: 4px; }
+  .fields-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin: 10px 0; }
+  .field-card { background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px; text-align: center; }
+  .field-card .field-name { font-weight: bold; font-size: 14px; color: #0984e3; }
+  .field-card .field-desc { font-size: 12px; color: #636e72; margin-top: 4px; }
+  .dimmed { opacity: 0.5; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📄 保单智能扫描工具</h1>
+  <div class="subtitle">需求分析 · 参考图片对照 · 待确认问题</div>
+
+  <div class="row">
+    <!-- 左侧：参考图片 -->
+    <div class="card" style="flex: 0 0 380px;">
+      <h2>📷 参考图片</h2>
+      <div class="img-container">
+        <img src="参考.png" class="ref-img" alt="参考图片">
+        <div class="zoom-hint">🔍 点击放大</div>
+      </div>
+    </div>
+
+    <!-- 右侧：需求解读 -->
+    <div class="card" style="flex: 1;">
+      <h2>🔍 需求解读</h2>
+
+      <h3>客户背景</h3>
+      <p style="font-size:14px;line-height:1.8;color:#636e72;">金融保险行业 · 保单文档扫描</p>
+
+      <h3>核心痛点</h3>
+      <ul>
+        <li>传统扫描提取<strong>所有页面的敏感字段</strong>（手机号、地址、姓名），但真正有用的只是<strong>首页表单</strong></li>
+        <li>传统方式产生大量"噪声标签"，但缺乏<strong>语义理解</strong></li>
+      </ul>
+
+      <h3>核心能力要求</h3>
+      <ul>
+        <li>✅ <strong>识别</strong>：判断文档是否为保单</li>
+        <li>✅ <strong>提取</strong>：险种 · 被保人身份 · 金额 · 有效期 · 销售经理</li>
+        <li>✅ <strong>统计</strong>：按<strong>个人维度</strong>统计敏感信息条数</li>
+      </ul>
+
+      <h3>关键差异：传统 vs 本工具</h3>
+      <table class="diff-table">
+        <tr><th style="width:120px;">维度</th><th>传统扫描</th><th>本工具目标</th></tr>
+        <tr>
+          <td>扫描范围</td>
+          <td class="bad">所有页面</td>
+          <td class="good">首页表单 + 结构识别</td>
+        </tr>
+        <tr>
+          <td>字段提取</td>
+          <td class="bad">规则匹配（手机/地址/姓名）</td>
+          <td class="good">语义理解（险种/金额/有效期/角色）</td>
+        </tr>
+        <tr>
+          <td>统计维度</td>
+          <td class="bad">按敏感字段计数 → 虚高</td>
+          <td class="good">按<strong>个人</strong>计数 → 真实</td>
+        </tr>
+        <tr>
+          <td>输出价值</td>
+          <td class="bad">噪声多，难以定价</td>
+          <td class="good">结构化报告，可付费</td>
+        </tr>
+      </table>
+
+      <div class="question-box">
+        <strong>❓ 统计逻辑说明：</strong><br>
+        全家保单中每个人算一条 → 基于<strong>个体</strong>的真实统计<br>
+        <span style="font-size:12px;color:#636e72;">例：夫妻+孩子在同一保单 → 3条敏感信息</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 处理流程 -->
+  <div class="card" style="margin-top:20px;">
+    <h2>⚙️ 预期处理流程（待确认）</h2>
+    <div class="flow">
+      <div class="flow-step">📄 输入<br><span style="font-size:11px;">PDF/图片</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">🔎 文档<br>分类</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">🧠 语义<br>提取</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">📊 结构<br>化输出</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">📋 敏感<br>统计</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="background:#00b894;">📁 报告</div>
+    </div>
+  </div>
+
+  <!-- 待提取字段 -->
+  <div class="card" style="margin-top:20px;">
+    <h2>🏷️ 待提取字段</h2>
+    <div class="fields-grid">
+      <div class="field-card"><div class="field-name">险种</div><div class="field-desc">重疾/医疗/意外/寿险...</div></div>
+      <div class="field-card"><div class="field-name">被保人</div><div class="field-desc">姓名+证件号+角色</div></div>
+      <div class="field-card"><div class="field-name">投保人</div><div class="field-desc">缴费人信息</div></div>
+      <div class="field-card"><div class="field-name">金额</div><div class="field-desc">保额/保费</div></div>
+      <div class="field-card"><div class="field-name">有效期</div><div class="field-desc">起止日期</div></div>
+      <div class="field-card"><div class="field-name">销售经理</div><div class="field-desc">业务员信息</div></div>
+    </div>
+    <div style="font-size:12px;color:#636e72;margin-top:8px;">⚠️ 具体字段定义需确认</div>
+  </div>
+
+  <!-- 关键问题 -->
+  <div class="card" style="margin-top:20px;">
+    <h2>❓ 待确认问题</h2>
+    <div class="row" style="gap:0;">
+      <div style="flex:1;">
+        <ul>
+          <li>输入格式：PDF？图片扫描件？两者都支持？</li>
+          <li>部署形态：命令行工具？Web服务？桌面应用？</li>
+          <li>识别方式：OCR+规则？AI/LLM？混合？</li>
+          <li>输出格式：JSON？Excel？PDF报告？网页？</li>
+        </ul>
+      </div>
+      <div style="flex:1;">
+        <ul>
+          <li>是否支持批量扫描？</li>
+          <li>保单类型范围：仅人身险？含财产险？</li>
+          <li>多被保人的关联逻辑如何定义？</li>
+          <li>是否需要敏感数据脱敏/加密存储？</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
