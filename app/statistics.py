@@ -55,4 +55,5 @@ def compute_stats(results: List[PolicyResult]) -> SensitiveStats:
         unknown_count=unknown_count,
         total_applicant_count=len(all_applicant_set),
         total_insured_count=len(life_insured_set),
+        sensitive_info_count=len(life_insured_set) + property_count - unknown_count,
     )

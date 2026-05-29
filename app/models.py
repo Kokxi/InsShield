@@ -44,6 +44,7 @@ class SensitiveStats(BaseModel):
     # 总览
     total_applicant_count: int = Field(0, description="所有保单去重投保人数")
     total_insured_count: int = Field(0, description="仅人身险被保人去重数")
+    sensitive_info_count: int = Field(0, description="涉敏信息条数（人身险被保人去重数 + 财产险保单数）")
 
 
 class UploadResponse(BaseModel):

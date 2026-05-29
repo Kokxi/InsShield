@@ -12,6 +12,7 @@ const progressSection = document.getElementById('progressSection');
 const progressFill = document.getElementById('progressFill');
 const progressText = document.getElementById('progressText');
 const statsSection = document.getElementById('statsSection');
+const sensitiveStatsCount = document.getElementById('sensitiveStatsCount');
 const lifeStatsCount = document.getElementById('lifeStatsCount');
 const propertyStatsCount = document.getElementById('propertyStatsCount');
 const unknownStatsCount = document.getElementById('unknownStatsCount');
@@ -116,6 +117,7 @@ uploadBtn.addEventListener('click', async () => {
 
 function renderStats(stats, totalCount) {
   statsSection.hidden = false;
+  sensitiveStatsCount.textContent = stats.sensitive_info_count;
   lifeStatsCount.textContent = stats.life_insured_count;
   propertyStatsCount.textContent = stats.property_count;
   unknownStatsCount.textContent = stats.unknown_count;
