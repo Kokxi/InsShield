@@ -39,12 +39,21 @@ header h1 { font-size: 24px; color: #0984e3; }
 
 /* 统计 */
 .stats-section { margin-bottom: 20px; }
+.stats-row { display: flex; gap: 16px; flex-wrap: wrap; }
 .stats-card {
+  flex: 1; min-width: 200px;
   background: white; border-radius: 12px; padding: 24px; text-align: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: inline-block; min-width: 280px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
+.stats-card-property .stats-number { color: #00b894; }
+.stats-card-unknown .stats-number { color: #fdcb6e; }
 .stats-number { font-size: 48px; font-weight: bold; color: #0984e3; display: block; }
 .stats-label { font-size: 14px; color: #636e72; margin-top: 4px; }
+
+/* 表格标题 */
+.table-title { font-size: 15px; margin: 20px 0 10px; padding-top: 16px; border-top: 1px solid #dfe6e9; }
+.table-title:first-of-type { border-top: none; padding-top: 0; }
+.section-hint { font-size: 12px; color: #636e72; font-weight: normal; }
 
 /* 结果表格 */
 .result-section { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }

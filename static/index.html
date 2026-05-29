@@ -35,13 +35,23 @@
 
   <!-- 统计概览 -->
   <section id="statsSection" class="stats-section" hidden>
-    <div class="stats-card">
-      <span class="stats-number" id="statsCount">0</span>
-      <span class="stats-label">敏感信息条数（去重后被保人）</span>
+    <div class="stats-row">
+      <div class="stats-card">
+        <span class="stats-number" id="lifeStatsCount">0</span>
+        <span class="stats-label">人身险被保人（去重）</span>
+      </div>
+      <div class="stats-card stats-card-property">
+        <span class="stats-number" id="propertyStatsCount">0</span>
+        <span class="stats-label">财产险保单数</span>
+      </div>
+      <div class="stats-card stats-card-unknown">
+        <span class="stats-number" id="unknownStatsCount">0</span>
+        <span class="stats-label">未分类保单</span>
+      </div>
     </div>
   </section>
 
-  <!-- 结果表格 -->
+  <!-- 结果表格区域 -->
   <section id="resultSection" class="result-section" hidden>
     <div class="result-toolbar">
       <h2>识别结果</h2>
@@ -51,18 +61,19 @@
         <button class="btn" id="clearBtn">清空</button>
       </div>
     </div>
+
+    <!-- 表格1：投保人信息表 -->
+    <h3 class="table-title">📋 投保人信息 <span class="section-hint">（所有保单）</span></h3>
     <div class="table-wrapper">
-      <table id="resultTable">
+      <table id="applicantTable">
         <thead>
           <tr>
             <th>文件名</th>
             <th>状态</th>
+            <th>险种类型</th>
             <th>保险公司</th>
-            <th>险种</th>
-            <th>保单号</th>
             <th>投保人</th>
-            <th>被保人</th>
-            <th>受益人</th>
+            <th>保单号</th>
             <th>保费</th>
             <th>交费方式</th>
             <th>生效日期</th>
@@ -70,8 +81,25 @@
             <th>销售经理</th>
           </tr>
         </thead>
-        <tbody id="resultBody">
-        </tbody>
+        <tbody id="applicantBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 表格2：被保人信息表 -->
+    <h3 class="table-title">👤 被保人信息 <span class="section-hint">（仅人身险）</span></h3>
+    <div class="table-wrapper">
+      <table id="insuredTable">
+        <thead>
+          <tr>
+            <th>投保人</th>
+            <th>被保人</th>
+            <th>受益人</th>
+            <th>险种类型</th>
+            <th>保险公司</th>
+            <th>保单号</th>
+          </tr>
+        </thead>
+        <tbody id="insuredBody"></tbody>
       </table>
     </div>
   </section>

@@ -7,6 +7,7 @@ class PolicyFields(BaseModel):
     """单个保单的提取字段"""
     insurance_company: Optional[str] = Field(None, description="保险公司")
     policy_type: Optional[str] = Field(None, description="险种")
+    insurance_category: Optional[str] = Field(None, description="险种分类: life/health/accident/car/property/unknown")
     policy_number: Optional[str] = Field(None, description="保单号")
     applicant: Optional[str] = Field(None, description="投保人")
     insured: Optional[str] = Field(None, description="被保人")
@@ -28,10 +29,21 @@ class PolicyResult(BaseModel):
 
 
 class SensitiveStats(BaseModel):
-    """敏感信息统计"""
-    total_unique_insured: int = Field(description="去重后的被保人数量")
-    insured_list: list[str] = Field(description="被保人姓名列表（去重后）")
-    details: list[PolicyResult] = Field(description="所有识别结果明细")
+    """敏感信息统计（按险种类型区分）"""
+    # 人身险统计
+    life_insured_count: int = Field(0, description="人身险被保人去重数")
+    life_insured_list: list[str] = Field(default_factory=list, description="人身险被保人姓名列表")
+
+    # 财产险统计
+    property_count: int = Field(0, description="财产险保单数")
+    property_applicant_list: list[str] = Field(default_factory=list, description="财产险投保人列表")
+
+    # 未知分类
+    unknown_count: int = Field(0, description="未分类保单数")
+
+    # 总览
+    total_applicant_count: int = Field(0, description="所有保单去重投保人数")
+    total_insured_count: int = Field(0, description="仅人身险被保人去重数")
 
 
 class UploadResponse(BaseModel):

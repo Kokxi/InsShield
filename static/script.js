@@ -12,9 +12,12 @@ const progressSection = document.getElementById('progressSection');
 const progressFill = document.getElementById('progressFill');
 const progressText = document.getElementById('progressText');
 const statsSection = document.getElementById('statsSection');
-const statsCount = document.getElementById('statsCount');
+const lifeStatsCount = document.getElementById('lifeStatsCount');
+const propertyStatsCount = document.getElementById('propertyStatsCount');
+const unknownStatsCount = document.getElementById('unknownStatsCount');
 const resultSection = document.getElementById('resultSection');
-const resultBody = document.getElementById('resultBody');
+const applicantBody = document.getElementById('applicantBody');
+const insuredBody = document.getElementById('insuredBody');
 const exportExcelBtn = document.getElementById('exportExcelBtn');
 const exportJsonBtn = document.getElementById('exportJsonBtn');
 const clearBtn = document.getElementById('clearBtn');
@@ -49,6 +52,16 @@ function updateFileList() {
   ).join('');
 }
 
+// 险种类型中文名映射
+const CATEGORY_NAMES = {
+  'life': '人寿险',
+  'health': '健康险',
+  'accident': '意外险',
+  'car': '车险',
+  'property': '财产险',
+  'unknown': '未知'
+};
+
 // 识别主流程
 uploadBtn.addEventListener('click', async () => {
   if (selectedFiles.length === 0) return;
@@ -80,11 +93,11 @@ uploadBtn.addEventListener('click', async () => {
     currentStats = data.stats;
 
     // 渲染统计
-    statsSection.hidden = false;
-    statsCount.textContent = data.stats.total_unique_insured;
+    renderStats(data.stats);
 
-    // 渲染表格
-    renderTable(data.results);
+    // 渲染双表格
+    renderApplicantTable(data.results);
+    renderInsuredTable(data.results);
     resultSection.hidden = false;
 
     progressFill.style.width = '100%';
@@ -98,7 +111,19 @@ uploadBtn.addEventListener('click', async () => {
   }
 });
 
-function renderTable(results) {
+function renderStats(stats) {
+  statsSection.hidden = false;
+  lifeStatsCount.textContent = stats.life_insured_count;
+  propertyStatsCount.textContent = stats.property_count;
+  unknownStatsCount.textContent = stats.unknown_count;
+}
+
+function getCategory(category) {
+  return CATEGORY_NAMES[category] || '未知';
+}
+
+// 渲染投保人信息表（所有状态为ok的保单，每文件一行）
+function renderApplicantTable(results) {
   const statusMap = {
     'ok': '✅ 正常',
     'not_policy': '⚠️ 非保单',
@@ -106,16 +131,14 @@ function renderTable(results) {
     'low_confidence': '⚡ 低置信度'
   };
 
-  resultBody.innerHTML = results.map(r => `
+  applicantBody.innerHTML = results.map((r, idx) => `
     <tr>
       <td>${escapeHtml(r.filename)}</td>
       <td class="status-${r.status}">${statusMap[r.status] || r.status}</td>
+      <td>${r.status === 'ok' ? getCategory(r.fields.insurance_category) : ''}</td>
       <td contenteditable="${r.status === 'ok'}">${escapeHtml(r.fields.insurance_company || '')}</td>
-      <td contenteditable="${r.status === 'ok'}">${escapeHtml(r.fields.policy_type || '')}</td>
-      <td contenteditable="${r.status === 'ok'}">${escapeHtml(r.fields.policy_number || '')}</td>
       <td contenteditable="${r.status === 'ok'}">${escapeHtml(r.fields.applicant || '')}</td>
-      <td contenteditable="${r.status === 'ok'}">${escapeHtml(r.fields.insured || '')}</td>
-      <td contenteditable="${r.status === 'ok'}">${escapeHtml(r.fields.beneficiary || '')}</td>
+      <td contenteditable="${r.status === 'ok'}">${escapeHtml(r.fields.policy_number || '')}</td>
       <td contenteditable="${r.status === 'ok'}">${escapeHtml(r.fields.premium || '')}</td>
       <td contenteditable="${r.status === 'ok'}">${escapeHtml(r.fields.payment_method || '')}</td>
       <td contenteditable="${r.status === 'ok'}">${escapeHtml(r.fields.effective_date || '')}</td>
@@ -124,20 +147,63 @@ function renderTable(results) {
     </tr>
   `).join('');
 
-  // 监听编辑事件，同步回内存数据
-  document.querySelectorAll('td[contenteditable="true"]').forEach((td) => {
+  // 编辑监听
+  const fieldNames = ['insurance_company', 'applicant', 'policy_number',
+    'premium', 'payment_method', 'effective_date', 'insurance_period', 'sales_manager'];
+  document.querySelectorAll('#applicantTable td[contenteditable="true"]').forEach((td) => {
     td.addEventListener('blur', () => {
       const row = td.closest('tr');
-      const rowIdx = Array.from(resultBody.children).indexOf(row);
-      const colIdx = Array.from(row.children).indexOf(td) - 1; // 减去文件名列
-      const fieldNames = ['insurance_company', 'policy_type', 'policy_number', 'applicant',
-        'insured', 'beneficiary', 'premium', 'payment_method', 'effective_date',
-        'insurance_period', 'sales_manager'];
+      const rowIdx = Array.from(applicantBody.children).indexOf(row);
+      const colIdx = Array.from(row.children).indexOf(td) - 3; // 减去文件名、状态、险种类型列
       if (rowIdx >= 0 && colIdx >= 0 && colIdx < fieldNames.length) {
         currentResults[rowIdx].fields[fieldNames[colIdx]] = td.textContent.trim() || null;
       }
     });
   });
+}
+
+// 渲染被保人信息表（仅人身险，被保人多人时拆行）
+function renderInsuredTable(results) {
+  const lifeCategories = ['life', 'health', 'accident'];
+  const rows = [];
+
+  results.forEach((r) => {
+    if (r.status !== 'ok') return;
+    const cat = r.fields.insurance_category;
+    if (!lifeCategories.includes(cat)) return;
+
+    // 拆分多个被保人
+    let insuredNames = [];
+    if (r.fields.insured) {
+      const text = r.fields.insured.replace(/,/g, '，').replace(/、/g, '，');
+      insuredNames = text.split('，').map(n => n.trim()).filter(n => n);
+    }
+    if (insuredNames.length === 0) {
+      insuredNames = ['']; // 至少一行
+    }
+
+    insuredNames.forEach((name) => {
+      rows.push({
+        applicant: r.fields.applicant || '',
+        insured: name,
+        beneficiary: r.fields.beneficiary || '',
+        category: getCategory(cat),
+        company: r.fields.insurance_company || '',
+        policyNumber: r.fields.policy_number || '',
+      });
+    });
+  });
+
+  insuredBody.innerHTML = rows.map(r => `
+    <tr>
+      <td>${escapeHtml(r.applicant)}</td>
+      <td>${escapeHtml(r.insured)}</td>
+      <td>${escapeHtml(r.beneficiary)}</td>
+      <td>${escapeHtml(r.category)}</td>
+      <td>${escapeHtml(r.company)}</td>
+      <td>${escapeHtml(r.policyNumber)}</td>
+    </tr>
+  `).join('');
 }
 
 // 导出Excel
@@ -167,8 +233,9 @@ exportJsonBtn.addEventListener('click', async () => {
       body: JSON.stringify({ results: currentResults, stats: currentStats }),
     });
     if (!resp.ok) throw new Error('导出失败');
-    const blob = await resp.blob();
-    downloadBlob(blob, '保单识别结果.json');
+    const blob = await blob;
+    const jsonBlob = await resp.blob();
+    downloadBlob(jsonBlob, '保单识别结果.json');
   } catch (err) {
     alert('导出JSON失败：' + err.message);
   }
@@ -194,7 +261,8 @@ clearBtn.addEventListener('click', () => {
   resultSection.hidden = true;
   statsSection.hidden = true;
   progressSection.hidden = true;
-  resultBody.innerHTML = '';
+  applicantBody.innerHTML = '';
+  insuredBody.innerHTML = '';
 });
 
 function escapeHtml(str) {

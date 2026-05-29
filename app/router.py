@@ -10,6 +10,7 @@ from app.pdf_processor import pdf_to_images, is_pdf_file
 from app.ocr_engine import OcrEngine
 from app.page_classifier import is_policy_page
 from app.field_extractor import extract_fields
+from app.classifier import classify_insurance
 from app.statistics import compute_stats
 from app.exporter import export_to_excel, export_to_json
 from app.models import PolicyResult, UploadResponse
@@ -55,6 +56,7 @@ async def upload_files(files: List[UploadFile] = File(...)):
                 continue
 
             fields = extract_fields(ocr_results)
+            fields.insurance_category = classify_insurance(fields.policy_type)
             policy_result = PolicyResult(
                 filename=file.filename or "unknown",
                 is_policy=True,
