@@ -19,6 +19,7 @@ const totalStatsCount = document.getElementById('totalStatsCount');
 const resultSection = document.getElementById('resultSection');
 const applicantBody = document.getElementById('applicantBody');
 const insuredBody = document.getElementById('insuredBody');
+const policyInfoBody = document.getElementById('policyInfoBody');
 const exportExcelBtn = document.getElementById('exportExcelBtn');
 const exportJsonBtn = document.getElementById('exportJsonBtn');
 const clearBtn = document.getElementById('clearBtn');
@@ -96,7 +97,8 @@ uploadBtn.addEventListener('click', async () => {
     // 渲染统计
     renderStats(data.stats, data.results.length);
 
-    // 渲染双表格
+    // 渲染三张表格
+    renderPolicyInfoTable(data.results);
     renderApplicantTable(data.results);
     renderInsuredTable(data.results);
     resultSection.hidden = false;
@@ -122,6 +124,20 @@ function renderStats(stats, totalCount) {
 
 function getCategory(category) {
   return CATEGORY_NAMES[category] || '未知';
+}
+
+// 渲染保单信息表（所有 is_policy=true 的文件）
+function renderPolicyInfoTable(results) {
+  policyInfoBody.innerHTML = results
+    .filter(r => r.is_policy)
+    .map(r => `
+      <tr>
+        <td>${escapeHtml(r.filename)}</td>
+        <td>${getCategory(r.fields.insurance_category)}</td>
+        <td>${escapeHtml(r.fields.insurance_company || '')}</td>
+        <td class="status-ok">✅ 有效</td>
+      </tr>
+    `).join('');
 }
 
 // 渲染投保人信息表（所有状态为ok的保单，每文件一行）
@@ -265,6 +281,7 @@ clearBtn.addEventListener('click', () => {
   progressSection.hidden = true;
   applicantBody.innerHTML = '';
   insuredBody.innerHTML = '';
+  policyInfoBody.innerHTML = '';
 });
 
 function escapeHtml(str) {
