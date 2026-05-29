@@ -8,11 +8,12 @@ def compute_stats(results: List[PolicyResult]) -> SensitiveStats:
     从所有识别结果中按险种类型进行统计。
 
     统计规则：
-    - 人身险（life/health/accident）：提取被保人姓名 → 去重 → 计数
+    - 人身险（life/health/accident）：提取投保人和被保人姓名 → 去重 → 计数
     - 财产险（car/property）：按保单数统计，记录投保人
     - 未知（unknown）：记录数量但不纳入人身险/财产险统计
     """
-    life_insured_set: set[str] = set()
+    life_individual_set: set[str] = set()  # 人身险所有个体（投保人+被保人去重）
+    life_insured_set: set[str] = set()     # 人身险被保人（用于 life_insured_list）
     property_applicant_list: list[str] = []
     all_applicant_set: set[str] = set()
     property_count = 0
@@ -25,14 +26,15 @@ def compute_stats(results: List[PolicyResult]) -> SensitiveStats:
         category = r.fields.insurance_category or "unknown"
 
         if category in ("life", "health", "accident"):
-            # 人身险：提取被保人，按顿号/逗号拆分为多人
+            # 人身险：投保人 + 被保人 = 涉敏个体
+            if r.fields.applicant:
+                life_individual_set.add(r.fields.applicant.strip())
+                all_applicant_set.add(r.fields.applicant.strip())
             if r.fields.insured:
                 text = r.fields.insured.replace(",", "，").replace("、", "，")
                 names = [n.strip() for n in text.split("，") if n.strip()]
+                life_individual_set.update(names)
                 life_insured_set.update(names)
-            # 记录投保人
-            if r.fields.applicant:
-                all_applicant_set.add(r.fields.applicant.strip())
 
         elif category in ("car", "property"):
             # 财产险：按保单数统计
@@ -54,6 +56,6 @@ def compute_stats(results: List[PolicyResult]) -> SensitiveStats:
         property_applicant_list=property_applicant_list,
         unknown_count=unknown_count,
         total_applicant_count=len(all_applicant_set),
-        total_insured_count=len(life_insured_set),
-        sensitive_info_count=len(life_insured_set) + property_count - unknown_count,
+        total_insured_count=len(life_individual_set),
+        sensitive_info_count=len(life_individual_set) + property_count,
     )
