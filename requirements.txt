@@ -6,4 +6,5 @@ python-multipart==0.0.29
 PyMuPDF==1.27.2
 openpyxl==3.1.5
 pytest==8.3.0
-aiofiles==25.1.0
+pydantic==2.11.0
+rapidocr_onnxruntime==1.3.7
