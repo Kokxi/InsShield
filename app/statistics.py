@@ -1,6 +1,9 @@
 """以人为单位的涉敏统计"""
+import logging
 from typing import List
 from app.models import FileResult, GlobalStats
+
+logger = logging.getLogger(__name__)
 
 
 def compute_global_stats(results: List[FileResult]) -> GlobalStats:
@@ -41,4 +44,6 @@ def compute_global_stats(results: List[FileResult]) -> GlobalStats:
             stats.anomaly_files += 1
 
     stats.global_unique_persons = len(unique_names) + anonymous_count
+    logger.info("sensitive_files=%s, global_unique_persons=%s, anomaly_files=%s",
+                stats.sensitive_files, stats.global_unique_persons, stats.anomaly_files)
     return stats

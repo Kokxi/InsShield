@@ -1,14 +1,18 @@
 """导出模块：支持 Excel 和 JSON 格式"""
 import json
 import io
+import logging
 from typing import List
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment
 from app.models import FileResult, GlobalStats
 
+logger = logging.getLogger(__name__)
+
 
 def export_to_excel(results: List[FileResult], stats: GlobalStats) -> bytes:
     """生成Excel文件内容（内存），返回bytes"""
+    logger.info("开始生成 Excel，结果数：%d", len(results))
     wb = Workbook()
 
     # === Sheet 1: 文件识别明细 ===
@@ -77,11 +81,14 @@ def export_to_excel(results: List[FileResult], stats: GlobalStats) -> bytes:
     buf = io.BytesIO()
     wb.save(buf)
     buf.seek(0)
-    return buf.getvalue()
+    data = buf.getvalue()
+    logger.info("Excel 生成完成，结果数：%d，字节数：%d", len(results), len(data))
+    return data
 
 
 def export_to_json(results: List[FileResult], stats: GlobalStats) -> str:
     """生成JSON字符串（用于下载）"""
+    logger.info("开始生成 JSON，结果数：%d", len(results))
     data = {
         "global_stats": {
             "total_files": stats.total_files,
@@ -130,4 +137,6 @@ def export_to_json(results: List[FileResult], stats: GlobalStats) -> str:
             for r in results
         ],
     }
-    return json.dumps(data, ensure_ascii=False, indent=2)
+    json_str = json.dumps(data, ensure_ascii=False, indent=2)
+    logger.info("JSON 生成完成，结果数：%d，字符数：%d", len(results), len(json_str))
+    return json_str
