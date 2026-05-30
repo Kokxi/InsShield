@@ -1,7 +1,10 @@
 """个人信息提取器：正则 + 关键词 + 人员分组"""
+import logging
 import re
 from typing import List
 from dataclasses import dataclass, field
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -103,6 +106,12 @@ def extract_pii_from_text(text: str) -> List[PIIItem]:
                 items.append(PIIItem(pii_type, value, label, line_no))
                 matched_values_per_line[line_no].add(value)
 
+    logger.info("PII 提取: %d 项 (身份证=%d, 手机号=%d, 银行卡=%d, 邮箱=%d)",
+                len(items),
+                sum(1 for i in items if i.type == "id_number"),
+                sum(1 for i in items if i.type == "phone"),
+                sum(1 for i in items if i.type == "bank_account"),
+                sum(1 for i in items if i.type == "email"))
     return items
 
 
@@ -125,6 +134,8 @@ def extract_persons(text: str) -> List[Person]:
                             name = match.group(0)
                             if _is_valid_name(name):
                                 persons.append(Person(name, role, [], line_no))
+
+    logger.info("人员提取: %d 人", len(persons))
     return persons
 
 
@@ -191,4 +202,8 @@ def group_pii_to_persons(persons: List[Person], pii_items: List[PIIItem],
         else:
             persons.append(Person("", "anonymous", [pii], pii.line_number))
 
+    logger.info("PII 归属: %d 人, %d 项 PII (匿名=%d)",
+                len(persons),
+                len(pii_items),
+                sum(1 for p in persons if not p.name))
     return persons
