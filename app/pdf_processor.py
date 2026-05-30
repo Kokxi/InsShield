@@ -24,3 +24,17 @@ def pdf_to_images(pdf_path: Path, dpi: int = 200, max_pages: int = 2) -> List[Pa
 def is_pdf_file(file_path: Path) -> bool:
     """判断是否为PDF文件"""
     return file_path.suffix.lower() == ".pdf"
+
+
+def extract_text_from_pdf(file_path: Path, max_pages: int = 2) -> str:
+    """尝试从文本型 PDF 直接提取文字层（不走 OCR），扫描型 PDF 返回空字符串"""
+    doc = fitz.open(file_path)
+    texts = []
+    page_count = min(len(doc), max_pages)
+    for page_num in range(page_count):
+        page = doc.load_page(page_num)
+        text = page.get_text()
+        if text.strip():
+            texts.append(text)
+    doc.close()
+    return '\n'.join(texts)

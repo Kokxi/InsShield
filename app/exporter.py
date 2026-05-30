@@ -4,20 +4,17 @@ import io
 from typing import List
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment
-from app.models import PolicyResult, SensitiveStats
-from app.classifier import get_category_display_name
+from app.models import FileResult, GlobalStats
 
 
-def export_to_excel(results: List[PolicyResult], stats: SensitiveStats) -> bytes:
+def export_to_excel(results: List[FileResult], stats: GlobalStats) -> bytes:
     """生成Excel文件内容（内存），返回bytes"""
     wb = Workbook()
 
-    # === Sheet 1: 明细 ===
+    # === Sheet 1: 文件识别明细 ===
     ws1 = wb.active
     ws1.title = "识别明细"
-    headers = ["文件名", "状态", "保险公司", "险种", "险种类型",
-               "保单号", "投保人", "被保人", "受益人", "保费",
-               "交费方式", "生效日期", "保险期间", "销售经理", "错误信息"]
+    headers = ["文件名", "文档类型", "险种类别", "险种大类", "保险公司", "保单号", "异常标记", "状态", "涉敏人数", "涉敏人员"]
     header_font = Font(bold=True)
     for col, h in enumerate(headers, 1):
         cell = ws1.cell(row=1, column=col, value=h)
@@ -26,20 +23,23 @@ def export_to_excel(results: List[PolicyResult], stats: SensitiveStats) -> bytes
 
     for row_idx, r in enumerate(results, 2):
         ws1.cell(row=row_idx, column=1, value=r.filename)
-        ws1.cell(row=row_idx, column=2, value=r.status)
-        ws1.cell(row=row_idx, column=3, value=r.fields.insurance_company or "")
-        ws1.cell(row=row_idx, column=4, value=r.fields.policy_type or "")
-        ws1.cell(row=row_idx, column=5, value=get_category_display_name(r.fields.insurance_category or ""))
-        ws1.cell(row=row_idx, column=6, value=r.fields.policy_number or "")
-        ws1.cell(row=row_idx, column=7, value=r.fields.applicant or "")
-        ws1.cell(row=row_idx, column=8, value=r.fields.insured or "")
-        ws1.cell(row=row_idx, column=9, value=r.fields.beneficiary or "")
-        ws1.cell(row=row_idx, column=10, value=r.fields.premium or "")
-        ws1.cell(row=row_idx, column=11, value=r.fields.payment_method or "")
-        ws1.cell(row=row_idx, column=12, value=r.fields.effective_date or "")
-        ws1.cell(row=row_idx, column=13, value=r.fields.insurance_period or "")
-        ws1.cell(row=row_idx, column=14, value=r.fields.sales_manager or "")
-        ws1.cell(row=row_idx, column=15, value=r.error_message or "")
+        ws1.cell(row=row_idx, column=2, value=r.document_type_display)
+        ws1.cell(row=row_idx, column=3, value=r.insurance_category_display)
+        ws1.cell(row=row_idx, column=4, value=r.insurance_branch_display)
+        ws1.cell(row=row_idx, column=5, value=r.insurance_company)
+        ws1.cell(row=row_idx, column=6, value=r.policy_number)
+        ws1.cell(row=row_idx, column=7, value=r.anomaly)
+        ws1.cell(row=row_idx, column=8, value=r.status)
+        ws1.cell(row=row_idx, column=9, value=r.sensitive_count)
+
+        # 涉敏人员列：展示姓名和角色
+        persons_text = ""
+        if r.persons:
+            persons_text = "; ".join([
+                f"{p.name or '(匿名)'}({p.role_display})"
+                for p in r.persons
+            ])
+        ws1.cell(row=row_idx, column=10, value=persons_text)
 
     # === Sheet 2: 统计 ===
     ws2 = wb.create_sheet("敏感信息统计")
@@ -47,23 +47,32 @@ def export_to_excel(results: List[PolicyResult], stats: SensitiveStats) -> bytes
     ws2.cell(row=row, column=1, value="统计项目").font = header_font
     ws2.cell(row=row, column=2, value="数值").font = header_font
     row += 1
-    ws2.cell(row=row, column=1, value="人身险被保人数量（去重）")
-    ws2.cell(row=row, column=2, value=stats.life_insured_count)
+    ws2.cell(row=row, column=1, value="总文件数")
+    ws2.cell(row=row, column=2, value=stats.total_files)
     row += 1
-    ws2.cell(row=row, column=1, value="被保人列表")
-    ws2.cell(row=row, column=2, value="、".join(stats.life_insured_list))
+    ws2.cell(row=row, column=1, value="涉敏文件数")
+    ws2.cell(row=row, column=2, value=stats.sensitive_files)
     row += 1
-    ws2.cell(row=row, column=1, value="财产险保单数量")
-    ws2.cell(row=row, column=2, value=stats.property_count)
+    ws2.cell(row=row, column=1, value="涉敏人数（去重）")
+    ws2.cell(row=row, column=2, value=stats.global_unique_persons)
     row += 1
-    ws2.cell(row=row, column=1, value="财产险投保人")
-    ws2.cell(row=row, column=2, value="、".join(stats.property_applicant_list))
+    ws2.cell(row=row, column=1, value="非涉敏文件数")
+    ws2.cell(row=row, column=2, value=stats.non_sensitive_files)
     row += 1
-    ws2.cell(row=row, column=1, value="未分类保单数")
-    ws2.cell(row=row, column=2, value=stats.unknown_count)
+    ws2.cell(row=row, column=1, value="人身险涉敏文件数")
+    ws2.cell(row=row, column=2, value=stats.life_sensitive_files)
     row += 1
-    ws2.cell(row=row, column=1, value="投保人总数（去重）")
-    ws2.cell(row=row, column=2, value=stats.total_applicant_count)
+    ws2.cell(row=row, column=1, value="人身险涉敏人数（去重）")
+    ws2.cell(row=row, column=2, value=stats.life_unique_persons)
+    row += 1
+    ws2.cell(row=row, column=1, value="财产险文件数")
+    ws2.cell(row=row, column=2, value=stats.property_files)
+    row += 1
+    ws2.cell(row=row, column=1, value="财产险涉敏人数")
+    ws2.cell(row=row, column=2, value=stats.property_sensitive_persons)
+    row += 1
+    ws2.cell(row=row, column=1, value="异常文件数")
+    ws2.cell(row=row, column=2, value=stats.anomaly_files)
 
     buf = io.BytesIO()
     wb.save(buf)
@@ -71,36 +80,51 @@ def export_to_excel(results: List[PolicyResult], stats: SensitiveStats) -> bytes
     return buf.getvalue()
 
 
-def export_to_json(results: List[PolicyResult], stats: SensitiveStats) -> str:
+def export_to_json(results: List[FileResult], stats: GlobalStats) -> str:
     """生成JSON字符串（用于下载）"""
     data = {
-        "insurance_stats": {
-            "life_insured_count": stats.life_insured_count,
-            "life_insured_list": stats.life_insured_list,
-            "property_count": stats.property_count,
-            "property_applicant_list": stats.property_applicant_list,
-            "unknown_count": stats.unknown_count,
-            "total_applicant_count": stats.total_applicant_count,
-            "total_insured_count": stats.total_insured_count,
+        "global_stats": {
+            "total_files": stats.total_files,
+            "sensitive_files": stats.sensitive_files,
+            "global_unique_persons": stats.global_unique_persons,
+            "non_sensitive_files": stats.non_sensitive_files,
+            "life_sensitive_files": stats.life_sensitive_files,
+            "life_unique_persons": stats.life_unique_persons,
+            "property_files": stats.property_files,
+            "property_sensitive_persons": stats.property_sensitive_persons,
+            "anomaly_files": stats.anomaly_files,
         },
         "details": [
             {
                 "filename": r.filename,
+                "is_insurance_related": r.is_insurance_related,
+                "document_type": r.document_type,
+                "document_type_display": r.document_type_display,
+                "insurance_category": r.insurance_category,
+                "insurance_category_display": r.insurance_category_display,
+                "insurance_branch": r.insurance_branch,
+                "insurance_branch_display": r.insurance_branch_display,
+                "anomaly": r.anomaly,
+                "insurance_company": r.insurance_company,
+                "policy_number": r.policy_number,
                 "status": r.status,
-                "insurance_category": r.fields.insurance_category,
-                "fields": {
-                    "insurance_company": r.fields.insurance_company,
-                    "policy_type": r.fields.policy_type,
-                    "policy_number": r.fields.policy_number,
-                    "applicant": r.fields.applicant,
-                    "insured": r.fields.insured,
-                    "beneficiary": r.fields.beneficiary,
-                    "premium": r.fields.premium,
-                    "payment_method": r.fields.payment_method,
-                    "effective_date": r.fields.effective_date,
-                    "insurance_period": r.fields.insurance_period,
-                    "sales_manager": r.fields.sales_manager,
-                },
+                "sensitive_count": r.sensitive_count,
+                "persons": [
+                    {
+                        "name": p.name,
+                        "role": p.role,
+                        "role_display": p.role_display,
+                        "details": [
+                            {
+                                "type": d.type,
+                                "value": d.value,
+                                "raw_label": d.raw_label,
+                            }
+                            for d in p.details
+                        ],
+                    }
+                    for p in r.persons
+                ],
                 "error_message": r.error_message,
             }
             for r in results

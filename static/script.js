@@ -1,8 +1,11 @@
-// 全局存储当前识别结果
-let currentResults = [];
-let currentStats = null;
+// API配置
+const API_BASE = '';
 
-// DOM引用
+// 状态
+let uploadedFileId = null;
+let currentResults = null;
+
+// DOM元素
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
 const selectBtn = document.getElementById('selectBtn');
@@ -12,15 +15,8 @@ const progressSection = document.getElementById('progressSection');
 const progressFill = document.getElementById('progressFill');
 const progressText = document.getElementById('progressText');
 const statsSection = document.getElementById('statsSection');
-const sensitiveStatsCount = document.getElementById('sensitiveStatsCount');
-const lifeStatsCount = document.getElementById('lifeStatsCount');
-const propertyStatsCount = document.getElementById('propertyStatsCount');
-const unknownStatsCount = document.getElementById('unknownStatsCount');
-const totalStatsCount = document.getElementById('totalStatsCount');
 const resultSection = document.getElementById('resultSection');
-const applicantBody = document.getElementById('applicantBody');
-const insuredBody = document.getElementById('insuredBody');
-const policyInfoBody = document.getElementById('policyInfoBody');
+const resultBody = document.getElementById('resultBody');
 const exportExcelBtn = document.getElementById('exportExcelBtn');
 const exportJsonBtn = document.getElementById('exportJsonBtn');
 const clearBtn = document.getElementById('clearBtn');
@@ -29,332 +25,285 @@ const modalTitle = document.getElementById('modalTitle');
 const modalBody = document.getElementById('modalBody');
 const modalCloseBtn = document.getElementById('modalCloseBtn');
 
-let selectedFiles = [];
-
-// 点击选择文件
+// 文件选择
 selectBtn.addEventListener('click', () => fileInput.click());
 dropZone.addEventListener('click', () => fileInput.click());
 
-// 拖拽上传
-dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+
+dropZone.addEventListener('dragleave', () => {
+  dropZone.classList.remove('dragover');
+});
+
 dropZone.addEventListener('drop', (e) => {
   e.preventDefault();
   dropZone.classList.remove('dragover');
   handleFiles(e.dataTransfer.files);
 });
 
-// 文件选择
-fileInput.addEventListener('change', () => { handleFiles(fileInput.files); });
-
-function handleFiles(files) {
-  selectedFiles = Array.from(files);
-  updateFileList();
-  uploadBtn.disabled = selectedFiles.length === 0;
-}
-
-function updateFileList() {
-  fileList.innerHTML = selectedFiles.map(f =>
-    `<div class="file-item">📎 ${f.name} (${(f.size / 1024).toFixed(1)} KB)</div>`
-  ).join('');
-}
-
-// 险种类型中文名映射
-const CATEGORY_NAMES = {
-  'life': '人寿险',
-  'health': '健康险',
-  'accident': '意外险',
-  'car': '车险',
-  'property': '财产险',
-  'unknown': '未知'
-};
-
-// 识别主流程
-uploadBtn.addEventListener('click', async () => {
-  if (selectedFiles.length === 0) return;
-
-  progressSection.hidden = false;
-  uploadBtn.disabled = true;
-  resultSection.hidden = true;
-  statsSection.hidden = true;
-
-  const formData = new FormData();
-  selectedFiles.forEach(f => formData.append('files', f));
-
-  try {
-    // 模拟进度（PaddleOCR无法提供真实进度）
-    progressFill.style.width = '30%';
-    progressText.textContent = '正在上传文件...';
-
-    const resp = await fetch('/api/upload', { method: 'POST', body: formData });
-    if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err.detail || `服务器错误: ${resp.status}`);
-    }
-
-    progressFill.style.width = '80%';
-    progressText.textContent = '识别完成，渲染结果...';
-
-    const data = await resp.json();
-    currentResults = data.results;
-    currentStats = data.stats;
-
-    // 渲染统计
-    renderStats(data.stats, data.results.length);
-
-    // 渲染三张表格
-    renderPolicyInfoTable(data.results);
-    renderApplicantTable(data.results);
-    renderInsuredTable(data.results);
-    resultSection.hidden = false;
-
-    progressFill.style.width = '100%';
-    progressText.textContent = `识别完成！共处理 ${data.results.length} 个文件`;
-  } catch (err) {
-    progressText.textContent = `❌ 错误：${err.message}`;
-    progressText.style.color = '#d63031';
-  } finally {
-    uploadBtn.disabled = false;
-    setTimeout(() => { progressSection.hidden = true; }, 3000);
-  }
+fileInput.addEventListener('change', (e) => {
+  handleFiles(e.target.files);
 });
 
-function renderStats(stats, totalCount) {
-  statsSection.hidden = false;
-  sensitiveStatsCount.textContent = stats.sensitive_info_count;
-  lifeStatsCount.textContent = stats.life_insured_count;
-  propertyStatsCount.textContent = stats.property_count;
-  unknownStatsCount.textContent = stats.unknown_count;
-  totalStatsCount.textContent = totalCount;
+function handleFiles(files) {
+  if (!files || files.length === 0) {
+    fileList.innerHTML = '';
+    uploadBtn.disabled = true;
+    return;
+  }
+
+  const fileArray = Array.from(files);
+  fileList.innerHTML = fileArray.map(f => `
+    <div class="file-item">
+      📄 ${escapeHtml(f.name)} <span class="file-size">(${formatSize(f.size)})</span>
+    </div>
+  `).join('');
+
+  uploadBtn.disabled = false;
+
+  uploadBtn.onclick = async () => {
+    await uploadAndRecognize(files);
+  };
 }
 
-function getCategory(category) {
-  return CATEGORY_NAMES[category] || '未知';
-}
+async function uploadAndRecognize(files) {
+  progressSection.hidden = false;
+  progressFill.style.width = '0%';
+  progressText.textContent = '正在上传文件...';
+  uploadBtn.disabled = true;
 
-function buildPolicyDetails(fields) {
-  const parts = [];
-  if (fields.insurance_company) parts.push(`保险公司: ${fields.insurance_company}`);
-  if (fields.policy_type) parts.push(`险种: ${fields.policy_type}`);
-  if (fields.policy_number) parts.push(`保单号: ${fields.policy_number}`);
-  if (fields.applicant) parts.push(`投保人: ${fields.applicant}`);
-  if (fields.insured) parts.push(`被保人: ${fields.insured}`);
-  if (fields.beneficiary) parts.push(`受益人: ${fields.beneficiary}`);
-  if (fields.premium) parts.push(`保费: ${fields.premium}`);
-  if (fields.payment_method) parts.push(`交费方式: ${fields.payment_method}`);
-  if (fields.effective_date) parts.push(`生效日期: ${fields.effective_date}`);
-  if (fields.insurance_period) parts.push(`保险期间: ${fields.insurance_period}`);
-  if (fields.sales_manager) parts.push(`销售经理: ${fields.sales_manager}`);
-  return parts.join(' | ');
-}
+  try {
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      formData.append('files', files[i]);
+    }
 
-// 渲染保单信息表（所有 is_policy=true 的文件）
-function renderPolicyInfoTable(results) {
-  policyInfoBody.innerHTML = results
-    .filter(r => r.is_policy)
-    .map((r, i) => `
-      <tr>
-        <td>${escapeHtml(r.filename)}</td>
-        <td>${getCategory(r.fields.insurance_category)}</td>
-        <td>${escapeHtml(r.fields.insurance_company || '')}</td>
-        <td class="status-ok">✅ 有效</td>
-        <td><button class="btn btn-detail" data-index="${i}">查看详情</button></td>
-      </tr>
-    `).join('');
+    progressFill.style.width = '30%';
+    progressText.textContent = '正在识别文件...';
 
-  // 将原始结果存到全局，供弹窗使用
-  window._policyResults = results.filter(r => r.is_policy);
-
-  // 绑定详情按钮事件
-  document.querySelectorAll('.btn-detail').forEach(btn => {
-    btn.addEventListener('click', function() {
-      const idx = parseInt(this.dataset.index);
-      const r = window._policyResults[idx];
-      if (r) showDetailModal(r);
+    const response = await fetch(`${API_BASE}/api/upload`, {
+      method: 'POST',
+      body: formData
     });
-  });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || '上传失败');
+    }
+
+    progressFill.style.width = '90%';
+    progressText.textContent = '正在处理结果...';
+
+    currentResults = await response.json();
+
+    renderStats(currentResults.stats);
+    renderResultsTable(currentResults.results);
+
+    progressFill.style.width = '100%';
+    progressText.textContent = '识别完成';
+
+    setTimeout(() => {
+      progressSection.hidden = true;
+    }, 1000);
+
+  } catch (error) {
+    progressFill.style.width = '100%';
+    progressFill.style.background = '#e74c3c';
+    progressText.textContent = `错误: ${error.message}`;
+  } finally {
+    uploadBtn.disabled = false;
+  }
 }
 
-// 渲染投保人信息表（所有状态为ok的保单，每文件一行）
-function renderApplicantTable(results) {
+function renderStats(stats) {
+  statsSection.hidden = false;
+  document.getElementById('totalFiles').textContent = stats.total_files;
+  document.getElementById('sensitiveFiles').textContent = stats.sensitive_files;
+  document.getElementById('globalPersons').textContent = stats.global_unique_persons;
+
+  // 人身险涉敏
+  document.getElementById('lifeStats').textContent = `${stats.life_sensitive_files}文件 ${stats.life_unique_persons}人`;
+  document.getElementById('lifeStatsLabel').textContent = '人身险涉敏';
+
+  // 财产险
+  document.getElementById('propertyStats').textContent = `${stats.property_files}文件 ${stats.property_sensitive_persons}人`;
+  document.getElementById('propertyStatsLabel').textContent = '财产险';
+
+  // 异常文件
+  document.getElementById('anomalyFiles').textContent = stats.anomaly_files;
+}
+
+function renderResultsTable(results) {
+  resultSection.hidden = false;
+
   const statusMap = {
-    'ok': '✅ 正常',
-    'not_policy': '⚠️ 非保单',
-    'error': '❌ 错误',
-    'low_confidence': '⚡ 低置信度'
+    'ok': '✅ 是',
+    'no_pii': '⚠️ 无个人信息',
+    'not_insurance': '❌ 非保险文档',
+    'error': '❌ 错误'
   };
 
-  applicantBody.innerHTML = results.map((r, idx) => `
-    <tr>
-      <td>${escapeHtml(r.filename)}</td>
-      <td class="status-${r.status}">${statusMap[r.status] || r.status}</td>
-      <td>${r.status === 'ok' ? getCategory(r.fields.insurance_category) : ''}</td>
-      <td contenteditable="${r.status === 'ok'}">${escapeHtml(r.fields.insurance_company || '')}</td>
-      <td contenteditable="${r.status === 'ok'}">${escapeHtml(r.fields.applicant || '')}</td>
-      <td contenteditable="${r.status === 'ok'}">${escapeHtml(r.fields.policy_number || '')}</td>
-      <td contenteditable="${r.status === 'ok'}">${escapeHtml(r.fields.premium || '')}</td>
-      <td contenteditable="${r.status === 'ok'}">${escapeHtml(r.fields.payment_method || '')}</td>
-      <td contenteditable="${r.status === 'ok'}">${escapeHtml(r.fields.effective_date || '')}</td>
-      <td contenteditable="${r.status === 'ok'}">${escapeHtml(r.fields.insurance_period || '')}</td>
-      <td contenteditable="${r.status === 'ok'}">${escapeHtml(r.fields.sales_manager || '')}</td>
-    </tr>
-  `).join('');
+  resultBody.innerHTML = results.map((r, idx) => {
+    const personsSummary = r.persons && r.persons.length > 0
+      ? r.persons.map(p => `${p.name || '(匿名)'}(${p.role_display})`).join('<br>')
+      : '-';
 
-  // 编辑监听
-  const fieldNames = ['insurance_company', 'applicant', 'policy_number',
-    'premium', 'payment_method', 'effective_date', 'insurance_period', 'sales_manager'];
-  document.querySelectorAll('#applicantTable td[contenteditable="true"]').forEach((td) => {
-    td.addEventListener('blur', () => {
-      const row = td.closest('tr');
-      const rowIdx = Array.from(applicantBody.children).indexOf(row);
-      const colIdx = Array.from(row.children).indexOf(td) - 3; // 减去文件名、状态、险种类型列
-      if (rowIdx >= 0 && colIdx >= 0 && colIdx < fieldNames.length) {
-        currentResults[rowIdx].fields[fieldNames[colIdx]] = td.textContent.trim() || null;
-      }
-    });
-  });
+    const anomalyHtml = r.anomaly
+      ? `<span class="anomaly-badge">${escapeHtml(r.anomaly)}</span>`
+      : '-';
+
+    return `
+      <tr${r.anomaly ? ' class="row-anomaly"' : ''}>
+        <td>${escapeHtml(r.filename)}</td>
+        <td>${escapeHtml(r.document_type_display)}</td>
+        <td>${escapeHtml(r.insurance_category_display)}</td>
+        <td>${escapeHtml(r.insurance_branch_display || '未知')}</td>
+        <td>${escapeHtml(r.insurance_company)}</td>
+        <td>${anomalyHtml}</td>
+        <td>${r.sensitive_count}</td>
+        <td>${personsSummary}</td>
+        <td><button class="btn-detail" onclick="showDetail(${idx})">查看</button></td>
+      </tr>
+    `;
+  }).join('');
 }
 
-// 渲染被保人信息表（仅人身险，被保人多人时拆行）
-function renderInsuredTable(results) {
-  const lifeCategories = ['life', 'health', 'accident'];
-  const rows = [];
+function showDetail(idx) {
+  const result = currentResults.results[idx];
+  modalTitle.textContent = `文件详情 — ${result.filename}`;
 
-  results.forEach((r) => {
-    if (r.status !== 'ok') return;
-    const cat = r.fields.insurance_category;
-    if (!lifeCategories.includes(cat)) return;
-
-    // 拆分多个被保人
-    let insuredNames = [];
-    if (r.fields.insured) {
-      const text = r.fields.insured.replace(/,/g, '，').replace(/、/g, '，');
-      insuredNames = text.split('，').map(n => n.trim()).filter(n => n);
-    }
-    if (insuredNames.length === 0) {
-      insuredNames = ['']; // 至少一行
-    }
-
-    insuredNames.forEach((name) => {
-      rows.push({
-        applicant: r.fields.applicant || '',
-        insured: name,
-        beneficiary: r.fields.beneficiary || '',
-        category: getCategory(cat),
-        company: r.fields.insurance_company || '',
-        policyNumber: r.fields.policy_number || '',
-      });
+  let personsHtml = '';
+  if (result.persons && result.persons.length > 0) {
+    personsHtml = '<h4>涉敏人员</h4><div class="persons-list">';
+    result.persons.forEach((p, i) => {
+      personsHtml += `
+        <div class="person-card">
+          <div class="person-header">
+            <strong>${escapeHtml(p.name || '(匿名)')}</strong>
+            <span class="role-badge">${escapeHtml(p.role_display)}</span>
+          </div>
+          ${p.details && p.details.length > 0 ? `
+            <ul class="pii-list">
+              ${p.details.map(d => `
+                <li><span class="pii-label">${escapeHtml(d.raw_label || d.type)}:</span> ${escapeHtml(d.value)}</li>
+              `).join('')}
+            </ul>
+          ` : '<p class="no-pii">仅姓名</p>'}
+        </div>
+      `;
     });
-  });
+    personsHtml += '</div>';
+  } else {
+    personsHtml = '<p class="no-persons">无涉敏人员</p>';
+  }
 
-  insuredBody.innerHTML = rows.map(r => `
-    <tr>
-      <td>${escapeHtml(r.applicant)}</td>
-      <td>${escapeHtml(r.insured)}</td>
-      <td>${escapeHtml(r.beneficiary)}</td>
-      <td>${escapeHtml(r.category)}</td>
-      <td>${escapeHtml(r.company)}</td>
-      <td>${escapeHtml(r.policyNumber)}</td>
-    </tr>
-  `).join('');
-}
-
-// ===== 详情弹窗 =====
-
-/** 展示保单详情弹窗 */
-function showDetailModal(result) {
-  const fields = result.fields || {};
-  const category = fields.insurance_category
-    ? getCategory(fields.insurance_category) : '—';
-
-  modalTitle.textContent = `保单详情 — ${result.filename}`;
   modalBody.innerHTML = `
     <div class="detail-summary">
-      文件名: ${escapeHtml(result.filename)} |
-      险种: ${escapeHtml(category)} |
-      状态: <span class="status-${result.status}">${result.status}</span>
+      <p><strong>文件名:</strong> ${escapeHtml(result.filename)}</p>
+      <p><strong>文档类型:</strong> ${escapeHtml(result.document_type_display)}</p>
+      <p><strong>险种类别:</strong> ${escapeHtml(result.insurance_category_display)}</p>
+      <p><strong>险种大类:</strong> ${escapeHtml(result.insurance_branch_display || '未知')}</p>
+      <p><strong>保险公司:</strong> ${escapeHtml(result.insurance_company)}</p>
+      ${result.policy_number ? `<p><strong>保单号:</strong> ${escapeHtml(result.policy_number)}</p>` : ''}
+      ${result.anomaly ? `<p class="anomaly-warning"><strong>异常标记:</strong> ${escapeHtml(result.anomaly)}</p>` : ''}
     </div>
     <hr>
-    <pre class="ocr-raw-text">${escapeHtml(result.raw_text || '无识别结果')}</pre>
+    ${personsHtml}
+    <hr>
+    <details class="raw-text-section">
+      <summary>识别原文（点击展开）</summary>
+      <pre class="ocr-raw-text">${escapeHtml(result.raw_text || '无识别结果')}</pre>
+    </details>
   `;
 
   detailModal.classList.add('open');
 }
 
-// 关闭抽屉
-modalCloseBtn.addEventListener('click', () => { detailModal.classList.remove('open'); });
+// 关闭详情抽屉
+modalCloseBtn.addEventListener('click', () => {
+  detailModal.classList.remove('open');
+});
+
 detailModal.addEventListener('click', (e) => {
-  if (e.target === detailModal) detailModal.classList.remove('open');
-});
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') detailModal.classList.remove('open');
+  if (e.target === detailModal) {
+    detailModal.classList.remove('open');
+  }
 });
 
-// 点击抽屉面板内部不冒泡到遮罩
-document.querySelector('.drawer-panel')?.addEventListener('click', (e) => e.stopPropagation());
-
-// 导出Excel
+// 导出功能
 exportExcelBtn.addEventListener('click', async () => {
-  if (!currentResults.length) return;
+  if (!currentResults) return;
+
   try {
-    const resp = await fetch('/api/export/excel', {
+    const response = await fetch(`${API_BASE}/api/export/excel`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ results: currentResults, stats: currentStats }),
+      body: JSON.stringify(currentResults)
     });
-    if (!resp.ok) throw new Error('导出失败');
-    const blob = await resp.blob();
-    downloadBlob(blob, '保单识别结果.xlsx');
-  } catch (err) {
-    alert('导出Excel失败：' + err.message);
+
+    if (!response.ok) throw new Error('导出失败');
+
+    const blob = await response.blob();
+    downloadBlob(blob, '保险涉敏信息识别结果.xlsx');
+  } catch (error) {
+    alert(`导出失败: ${error.message}`);
   }
 });
 
-// 导出JSON
 exportJsonBtn.addEventListener('click', async () => {
-  if (!currentResults.length) return;
+  if (!currentResults) return;
+
   try {
-    const resp = await fetch('/api/export/json', {
+    const response = await fetch(`${API_BASE}/api/export/json`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ results: currentResults, stats: currentStats }),
+      body: JSON.stringify(currentResults)
     });
-    if (!resp.ok) throw new Error('导出失败');
-    const blob = await blob;
-    const jsonBlob = await resp.blob();
-    downloadBlob(jsonBlob, '保单识别结果.json');
-  } catch (err) {
-    alert('导出JSON失败：' + err.message);
+
+    if (!response.ok) throw new Error('导出失败');
+
+    const blob = await response.blob();
+    downloadBlob(blob, '保险涉敏信息识别结果.json');
+  } catch (error) {
+    alert(`导出失败: ${error.message}`);
   }
 });
+
+// 清空
+clearBtn.addEventListener('click', () => {
+  uploadedFileId = null;
+  currentResults = null;
+  fileInput.value = '';
+  fileList.innerHTML = '';
+  uploadBtn.disabled = true;
+  progressSection.hidden = true;
+  statsSection.hidden = true;
+  resultSection.hidden = true;
+});
+
+// 工具函数
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
 
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
   URL.revokeObjectURL(url);
-}
-
-// 清空
-clearBtn.addEventListener('click', () => {
-  currentResults = [];
-  currentStats = null;
-  selectedFiles = [];
-  fileInput.value = '';
-  updateFileList();
-  uploadBtn.disabled = true;
-  resultSection.hidden = true;
-  statsSection.hidden = true;
-  progressSection.hidden = true;
-  applicantBody.innerHTML = '';
-  insuredBody.innerHTML = '';
-  policyInfoBody.innerHTML = '';
-});
-
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
 }

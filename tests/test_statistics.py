@@ -1,23 +1,25 @@
 """测试敏感信息统计（按险种类型区分）"""
 import pytest
-from app.statistics import compute_stats
-from app.models import PolicyResult, PolicyFields
+from app.statistics import compute_global_stats
+from app.models import FileResult, PersonModel
 
 
 def make_result(
-    applicant: str = "某人",
-    insured: str = "",
-    insurance_category: str = "life",
+    name: str = "某人",
+    category: str = "life",
     status: str = "ok",
-) -> PolicyResult:
-    return PolicyResult(
-        filename=f"{applicant}.pdf",
-        is_policy=True,
-        fields=PolicyFields(
-            applicant=applicant,
-            insured=insured,
-            insurance_category=insurance_category,
-        ),
+    branch: str = "life",
+    is_related: bool = True,
+) -> FileResult:
+    return FileResult(
+        filename=f"{name}.pdf",
+        is_insurance_related=is_related,
+        insurance_category=category,
+        insurance_category_display={"life": "人寿险", "health": "健康险", "accident": "意外险", "car": "车险", "property": "财产险"}.get(category, "未知"),
+        insurance_branch=branch,
+        insurance_branch_display={"life": "人身保险", "property": "财产保险"}.get(branch, "未知"),
+        persons=[PersonModel(name=name, role="applicant", role_display="投保人")] if name else [],
+        sensitive_count=1 if name else 0,
         status=status,
     )
 
@@ -25,136 +27,133 @@ def make_result(
 class TestComputeStats:
     """统计引擎测试"""
 
-    def test_life_single_insured(self):
-        """人身险：一个人一个保单"""
-        results = [make_result(insured="李四", insurance_category="life")]
-        stats = compute_stats(results)
-        assert stats.life_insured_count == 1
-        assert stats.life_insured_list == ["李四"]
-        assert stats.property_count == 0
+    def test_life_single(self):
+        """人身险：一个人一个文件"""
+        results = [make_result(name="李四", category="life")]
+        stats = compute_global_stats(results)
+        assert stats.life_sensitive_files == 1
+        assert stats.life_unique_persons == 1
+        assert stats.property_files == 0
 
-    def test_life_multiple_insured(self):
-        """人身险：多个不同被保人"""
+    def test_life_multiple(self):
+        """人身险：多个不同人"""
         results = [
-            make_result(insured="李四", insurance_category="life"),
-            make_result(insured="张三", insurance_category="life"),
+            make_result(name="李四", category="life"),
+            make_result(name="张三", category="life"),
         ]
-        stats = compute_stats(results)
-        assert stats.life_insured_count == 2
-        assert stats.life_insured_list == ["张三", "李四"]
-
-    def test_life_duplicate_insured(self):
-        """人身险：同一被保人多张保单，去重后算1条"""
-        results = [
-            make_result(insured="李四", insurance_category="life"),
-            make_result(insured="李四", insurance_category="life"),
-        ]
-        stats = compute_stats(results)
-        assert stats.life_insured_count == 1
-        assert stats.life_insured_list == ["李四"]
+        stats = compute_global_stats(results)
+        assert stats.life_sensitive_files == 2
+        assert stats.life_unique_persons == 2
 
     def test_property_count(self):
-        """财产险：按保单数统计"""
+        """财产险：按文件数统计"""
         results = [
-            make_result(applicant="张三", insurance_category="car"),
-            make_result(applicant="张三", insurance_category="car"),
+            make_result(name="张三", category="car", branch="property"),
+            make_result(name="张三", category="car", branch="property"),
         ]
-        stats = compute_stats(results)
-        assert stats.property_count == 2
-        assert stats.life_insured_count == 0
+        stats = compute_global_stats(results)
+        assert stats.property_files == 2
+        assert stats.property_sensitive_persons == 2
+        assert stats.life_sensitive_files == 0
 
     def test_mixed_types(self):
         """混合类型统计"""
         results = [
-            make_result(applicant="张三", insured="张三", insurance_category="life"),
-            make_result(applicant="李四", insured="李四", insurance_category="life"),
-            make_result(applicant="王五", insurance_category="car"),
+            make_result(name="张三", category="life"),
+            make_result(name="李四", category="life"),
+            make_result(name="王五", category="car", branch="property"),
         ]
-        stats = compute_stats(results)
-        assert stats.life_insured_count == 2
-        assert stats.property_count == 1
-        assert stats.total_applicant_count == 3
+        stats = compute_global_stats(results)
+        assert stats.life_sensitive_files == 2
+        assert stats.life_unique_persons == 2
+        assert stats.property_files == 1
+        assert stats.property_sensitive_persons == 1
 
     def test_unknown_not_counted(self):
-        """未知类型不计入人身险/财产险统计"""
+        """未知类型不计入分支统计"""
         results = [
-            make_result(applicant="张三", insurance_category="unknown"),
+            FileResult(
+                filename="未知.pdf", is_insurance_related=True,
+                insurance_category="unknown", insurance_category_display="未知",
+                insurance_branch="unknown", insurance_branch_display="未知",
+                status="ok", sensitive_count=0,
+            ),
         ]
-        stats = compute_stats(results)
-        assert stats.unknown_count == 1
-        assert stats.life_insured_count == 0
-        assert stats.property_count == 0
+        stats = compute_global_stats(results)
+        assert stats.total_files == 1
+        assert stats.life_sensitive_files == 0
+        assert stats.property_files == 0
 
     def test_skip_non_ok_status(self):
         """非ok状态不统计"""
         results = [
-            make_result(insured="李四", status="ok"),
-            make_result(insured="张三", status="not_policy"),
-            PolicyResult(
+            make_result(name="李四", status="ok"),
+            FileResult(
                 filename="error.pdf",
-                is_policy=False,
-                fields=PolicyFields(insured="王五", insurance_category="life"),
+                status="not_insurance",
+                error_message="非保险文档",
+            ),
+            FileResult(
+                filename="error2.pdf",
                 status="error",
                 error_message="识别失败",
             ),
         ]
-        stats = compute_stats(results)
-        assert stats.life_insured_count == 1
-        assert stats.life_insured_list == ["李四"]
+        stats = compute_global_stats(results)
+        assert stats.total_files == 1
+        assert stats.life_sensitive_files == 1
 
     def test_empty_results(self):
         """空列表"""
-        stats = compute_stats([])
-        assert stats.life_insured_count == 0
-        assert stats.life_insured_list == []
-        assert stats.property_count == 0
-        assert stats.unknown_count == 0
-        assert stats.total_applicant_count == 0
+        stats = compute_global_stats([])
+        assert stats.total_files == 0
 
-    def test_all_not_policy(self):
-        """全都不是保单"""
+    def test_skip_not_insurance_related(self):
+        """非保险相关的跳过"""
         results = [
-            PolicyResult(
-                filename="a.pdf", is_policy=False,
-                fields=PolicyFields(), status="not_policy",
-            )
+            make_result(name="张三", is_related=False, status="not_insurance"),
         ]
-        stats = compute_stats(results)
-        assert stats.life_insured_count == 0
-
-    def test_life_multiple_insured_in_one_policy(self):
-        """人寿险：一个保单多个被保人（顿号分隔）"""
-        results = [make_result(insured="张三、李四", insurance_category="life")]
-        stats = compute_stats(results)
-        assert stats.life_insured_count == 2
-        assert stats.life_insured_list == ["张三", "李四"]
-
-    def test_property_applicant_list(self):
-        """财产险投保人列表"""
-        results = [
-            make_result(applicant="张三", insurance_category="car"),
-            make_result(applicant="李四", insurance_category="property"),
-        ]
-        stats = compute_stats(results)
-        assert stats.property_count == 2
-        assert "张三" in stats.property_applicant_list
-        assert "李四" in stats.property_applicant_list
-
-    def test_total_applicant_count(self):
-        """所有保单去重投保人数"""
-        results = [
-            make_result(applicant="张三", insurance_category="life"),
-            make_result(applicant="张三", insurance_category="car"),
-            make_result(applicant="李四", insurance_category="life"),
-        ]
-        stats = compute_stats(results)
-        assert stats.total_applicant_count == 2
+        stats = compute_global_stats(results)
+        assert stats.total_files == 0
 
     def test_health_and_accident(self):
         """健康险和意外险也归入人身险"""
         results = [
-            make_result(insured="张三", insurance_category="health"),
-            make_result(insured="李四", insurance_category="accident"),
+            make_result(name="张三", category="health"),
+            make_result(name="李四", category="accident"),
         ]
-        stats = compute_stats(results)
-        assert stats.life_insured_count == 2
+        stats = compute_global_stats(results)
+        assert stats.life_sensitive_files == 2
+        assert stats.life_unique_persons == 2
+
+    def test_anomaly_counted(self):
+        """异常文件计数"""
+        results = [
+            FileResult(
+                filename="异常.pdf", is_insurance_related=True,
+                insurance_category="car", insurance_category_display="车险",
+                insurance_branch="property", insurance_branch_display="财产保险",
+                anomaly="财产险多人",
+                persons=[PersonModel(name="张三"), PersonModel(name="李四")],
+                sensitive_count=2, status="ok",
+            ),
+        ]
+        stats = compute_global_stats(results)
+        assert stats.anomaly_files == 1
+        assert stats.property_files == 1
+
+    def test_no_pii_file(self):
+        """无PII文件不算涉敏"""
+        results = [
+            FileResult(
+                filename="无敏.pdf", is_insurance_related=True,
+                insurance_category="life", insurance_category_display="人寿险",
+                insurance_branch="life", insurance_branch_display="人身保险",
+                status="ok", sensitive_count=0,
+            ),
+        ]
+        stats = compute_global_stats(results)
+        assert stats.sensitive_files == 0
+        assert stats.non_sensitive_files == 1
+        assert stats.life_sensitive_files == 1  # 人身险文件数，非涉敏计数
+        assert stats.life_unique_persons == 0

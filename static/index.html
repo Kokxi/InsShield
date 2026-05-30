@@ -3,22 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>保单敏感信息扫描工具</title>
+<title>保险涉敏信息扫描工具</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 <div class="container">
   <header>
-    <h1>📄 保单敏感信息扫描工具</h1>
-    <p class="subtitle">上传PDF或图片保单，自动识别提取关键字段并统计敏感信息</p>
+    <h1>📄 保险涉敏信息扫描工具</h1>
+    <p class="subtitle">上传 PDF、图片或 Word 文档，自动识别保险相关文件并提取涉敏人员信息</p>
   </header>
 
   <!-- 上传区域 -->
   <section class="upload-section">
     <div class="drop-zone" id="dropZone">
       <p class="drop-text">拖拽文件到此区域，或点击选择文件</p>
-      <p class="drop-hint">支持 PDF、JPG、JPEG、PNG · 可一次选择多个文件</p>
-      <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png" hidden>
+      <p class="drop-hint">支持 PDF、JPG、JPEG、PNG、Word(.docx) · 可一次选择多个文件</p>
+      <input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png,.docx" hidden>
       <button class="btn" id="selectBtn">选择文件</button>
     </div>
     <div id="fileList" class="file-list"></div>
@@ -36,30 +36,34 @@
   <!-- 统计概览 -->
   <section id="statsSection" class="stats-section" hidden>
     <div class="stats-row">
-      <div class="stats-card stats-card-sensitive">
-        <span class="stats-number" id="sensitiveStatsCount">0</span>
-        <span class="stats-label">涉敏信息条数</span>
-      </div>
       <div class="stats-card">
-        <span class="stats-number" id="lifeStatsCount">0</span>
-        <span class="stats-label">人身险被保人（去重）</span>
+        <span class="stats-number" id="totalFiles">0</span>
+        <span class="stats-label">总文件数</span>
+      </div>
+      <div class="stats-card stats-card-sensitive">
+        <span class="stats-number" id="sensitiveFiles">0</span>
+        <span class="stats-label">涉敏文件数</span>
+      </div>
+      <div class="stats-card stats-card-primary">
+        <span class="stats-number" id="globalPersons">0</span>
+        <span class="stats-label">涉敏人数（去重）</span>
+      </div>
+      <div class="stats-card stats-card-life">
+        <span class="stats-number" id="lifeStats">0</span>
+        <span class="stats-label" id="lifeStatsLabel">人身险涉敏</span>
       </div>
       <div class="stats-card stats-card-property">
-        <span class="stats-number" id="propertyStatsCount">0</span>
-        <span class="stats-label">财产险保单数</span>
+        <span class="stats-number" id="propertyStats">0</span>
+        <span class="stats-label" id="propertyStatsLabel">财产险文件</span>
       </div>
-      <div class="stats-card stats-card-unknown">
-        <span class="stats-number" id="unknownStatsCount">0</span>
-        <span class="stats-label">未分类保单</span>
-      </div>
-      <div class="stats-card stats-card-total">
-        <span class="stats-number" id="totalStatsCount">0</span>
-        <span class="stats-label">总文件数</span>
+      <div class="stats-card stats-card-anomaly">
+        <span class="stats-number" id="anomalyFiles">0</span>
+        <span class="stats-label">异常文件</span>
       </div>
     </div>
   </section>
 
-  <!-- 结果表格区域 -->
+  <!-- 结果表格 -->
   <section id="resultSection" class="result-section" hidden>
     <div class="result-toolbar">
       <h2>识别结果</h2>
@@ -70,64 +74,36 @@
       </div>
     </div>
 
-    <!-- 表格1：保单信息表 -->
-    <h3 class="table-title">📋 保单信息 <span class="section-hint">（所有保单）</span></h3>
     <div class="table-wrapper">
-      <table id="policyInfoTable">
-        <thead>
-          <tr>
-              <th>文件名</th>
-              <th>险种类型</th>
-              <th>保险公司</th>
-              <th>是否有效</th>
-              <th>详情</th>
-          </tr>
-        </thead>
-        <tbody id="policyInfoBody"></tbody>
-      </table>
-    </div>
-
-    <!-- 表格2：投保人信息表 -->
-    <h3 class="table-title">📋 投保人信息 <span class="section-hint">（所有保单）</span></h3>
-    <div class="table-wrapper">
-      <table id="applicantTable">
+      <table id="resultTable">
         <thead>
           <tr>
             <th>文件名</th>
-            <th>状态</th>
-            <th>险种类型</th>
+            <th>文档类型</th>
+            <th>险种类别</th>
+            <th>险种大类</th>
             <th>保险公司</th>
-            <th>投保人</th>
-            <th>保单号</th>
-            <th>保费</th>
-            <th>交费方式</th>
-            <th>生效日期</th>
-            <th>保险期间</th>
-            <th>销售经理</th>
+            <th>异常标记</th>
+            <th>涉敏人数</th>
+            <th>涉敏人员</th>
+            <th>详情</th>
           </tr>
         </thead>
-        <tbody id="applicantBody"></tbody>
-      </table>
-    </div>
-
-    <!-- 表格3：被保人信息表 -->
-    <h3 class="table-title">👤 被保人信息 <span class="section-hint">（仅人身险）</span></h3>
-    <div class="table-wrapper">
-      <table id="insuredTable">
-        <thead>
-          <tr>
-            <th>投保人</th>
-            <th>被保人</th>
-            <th>受益人</th>
-            <th>险种类型</th>
-            <th>保险公司</th>
-            <th>保单号</th>
-          </tr>
-        </thead>
-        <tbody id="insuredBody"></tbody>
+        <tbody id="resultBody"></tbody>
       </table>
     </div>
   </section>
+</div>
+
+<!-- 详情抽屉 -->
+<div id="detailModal" class="drawer-overlay">
+  <div class="drawer-panel">
+    <div class="drawer-header">
+      <span id="modalTitle">文件详情</span>
+      <button class="drawer-close" id="modalCloseBtn">&times;</button>
+    </div>
+    <div class="drawer-body" id="modalBody"></div>
+  </div>
 </div>
 
 <script src="/static/script.js"></script>

@@ -37,6 +37,6 @@ INSURANCE_COMPANIES = [
 OCR_CONFIDENCE_THRESHOLD = 0.7
 
 # 文件上传限制
-ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png"}
+ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".docx", ".doc"}
 MAX_FILE_SIZE_MB = 50
 UPLOAD_DIR = "uploads"
