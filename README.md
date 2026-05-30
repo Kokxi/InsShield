@@ -1,8 +1,8 @@
-# InsShield — 保险文档敏感信息防护盾
+# InsShield — 保险行业个人信息监测扫描工具
 
 ## 项目定位
 
-InsShield 是一款面向保险行业的文档扫描与分析工具，专注于自动检测、识别并遮蔽（脱敏）保险保单文档中的**敏感个人信息（PII，Personally Identifiable Information）**。
+InsShield 是一款面向保险行业的个人信息监测扫描工具，专注于自动检测、识别并遮蔽（脱敏）保险保单文档中的**敏感个人信息（PII，Personally Identifiable Information）**，帮助保险机构合规、高效地管理客户数据隐私。
 
 ### 为什么需要 InsShield？
 
