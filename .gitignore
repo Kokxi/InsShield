@@ -7,4 +7,7 @@ logs/
 *.result
 output.txt
 temp/
-jinrong-sdd.rar  
+jinrong-sdd.rar
+_rename.bat
+docs/superpowers/
+.atomcode/
