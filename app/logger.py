@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 def setup_logger(
-    name: str = "jinrong-sdd",
+    name: str = "InsShield",
     level: int = logging.INFO,
     log_file: str | None = None,
 ) -> logging.Logger:
@@ -47,4 +47,4 @@ def setup_logger(
 # 全局默认 logger，模块通过 getLogger(__name__) 使用
 # 同时输出到控制台(stderr)和日志文件
 log_dir = Path(__file__).resolve().parent.parent / "logs"
-default_logger = setup_logger(log_file=str(log_dir / "jinrong-sdd.log"))
+default_logger = setup_logger(log_file=str(log_dir / "InsShield.log"))
