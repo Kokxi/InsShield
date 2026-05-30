@@ -1,9 +1,12 @@
 """上传文件处理：校验、保存、清理"""
 import os
 import uuid
+import logging
 from pathlib import Path
 from fastapi import UploadFile, HTTPException
 from app.config import ALLOWED_EXTENSIONS, MAX_FILE_SIZE_MB, UPLOAD_DIR
+
+logger = logging.getLogger(__name__)
 
 
 def ensure_upload_dir():
@@ -31,6 +34,7 @@ async def save_upload(file: UploadFile) -> Path:
     dest = Path(UPLOAD_DIR) / safe_name
     content = await file.read()
     dest.write_bytes(content)
+    logger.info("收到文件: %s (%s, %.1f KB)", basename, ext, len(content) / 1024)
     return dest
 
 
@@ -39,3 +43,4 @@ def cleanup_files():
     import shutil
     if Path(UPLOAD_DIR).exists():
         shutil.rmtree(UPLOAD_DIR)
+        logger.info("上传临时目录已清理")

@@ -1,12 +1,24 @@
 """FastAPI 应用入口"""
+from contextlib import asynccontextmanager
 from pathlib import Path
 import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from app.router import router
+from app.logger import default_logger
 
-app = FastAPI(title="保单敏感信息扫描工具")
+logger = default_logger
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """应用生命周期"""
+    logger.info("服务启动 — http://127.0.0.1:8000")
+    yield
+
+
+app = FastAPI(title="保单敏感信息扫描工具", lifespan=lifespan)
 
 static_dir = Path(__file__).parent / "static"
 index_html = static_dir / "index.html"
@@ -28,4 +40,5 @@ async def serve_index():
 
 
 if __name__ == "__main__":
+    logger.info("正在启动 uvicorn server...")
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=False)
