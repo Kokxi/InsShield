@@ -1,5 +1,8 @@
 """险种分类器 — 根据险种名称识别保险大类"""
+import logging
 from typing import Optional, List
+
+logger = logging.getLogger(__name__)
 
 
 # 分类规则表（按优先级从高到低）
@@ -82,7 +85,9 @@ def classify_from_full_text(full_text: str) -> str:
     for category, keywords in FALLBACK_CLASSIFIER_RULES:
         for kw in keywords:
             if kw in full_text:
+                logger.info("险种全文识别: %s -> %s", category, get_category_display_name(category))
                 return category
+    logger.info("险种全文识别: unknown -> 未知")
     return "unknown"
 
 

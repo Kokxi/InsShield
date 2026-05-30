@@ -1,5 +1,8 @@
 """文档类型分类器：识别保险业务文档类型 + 判断是否保险相关"""
+import logging
 from typing import Tuple
+
+logger = logging.getLogger(__name__)
 
 # 文档类型关键词（按优先级从高到低，先命中先归谁）
 DOC_TYPE_RULES: list[tuple[str, list[str]]] = [
@@ -36,17 +39,21 @@ def classify_doc_type(text: str, filename: str = "") -> Tuple[str, bool]:
     # 从文件名推断
     for doc_type, keywords in DOC_TYPE_RULES:
         if any(kw in filename for kw in keywords):
+            logger.info("文档分类: %s -> %s (文件名命中)", filename or "(无文件名)", doc_type)
             return doc_type, True
 
     # 从文本前 500 字推断（标题区域）
     title = text[:500]
     for doc_type, keywords in DOC_TYPE_RULES:
         if any(kw in title for kw in keywords):
+            logger.info("文档分类: %s -> %s (文本命中)", filename or "(无文件名)", doc_type)
             return doc_type, True
 
     if is_insurance:
+        logger.info("文档分类: %s -> other (保险相关但未匹配到具体类型)", filename or "(无文件名)")
         return "other", True
 
+    logger.info("文档分类: %s -> unknown (非保险文档)", filename or "(无文件名)")
     return "unknown", False
 
 
