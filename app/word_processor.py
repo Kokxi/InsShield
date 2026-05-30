@@ -1,5 +1,8 @@
 """Word 文档文本提取"""
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def is_word_file(path: Path) -> bool:
@@ -26,11 +29,15 @@ def extract_text_from_docx(path: Path) -> str:
             if row_text:
                 texts.append(row_text)
 
-    return '\n'.join(texts)
+    result = '\n'.join(texts)
+    logger.info("extract_text_from_docx: file=%s chars=%d", path.name, len(result))
+    return result
 
 
 def extract_text_from_doc(path: Path) -> str:
     """提取 .doc 格式文本（需要转换为 .docx 或使用其他库）"""
     # .doc 格式处理较复杂，建议用户转换为 .docx
     # 这里返回提示信息
-    return f"[.doc 格式暂不支持，请将文件转换为 .docx 格式: {path.name}]"
+    msg = f"[.doc 格式暂不支持，请将文件转换为 .docx 格式: {path.name}]"
+    logger.warning(msg)
+    return msg
