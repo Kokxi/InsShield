@@ -1,9 +1,12 @@
 """OCR 引擎封装（rapidocr_onnxruntime），全局单例"""
+import logging
 import threading
 from pathlib import Path
 from typing import List, Optional
 
 from app.config import OCR_CONFIDENCE_THRESHOLD
+
+logger = logging.getLogger(__name__)
 
 
 class OcrResult:
@@ -41,6 +44,7 @@ class OcrEngine:
                 if self._ocr is None:
                     from rapidocr_onnxruntime import RapidOCR
                     self._ocr = RapidOCR(print_verbose=False)
+                    logger.info("OCR 引擎已加载 (rapidocr_onnxruntime)")
 
     def recognize(self, image_path: Path) -> List[OcrResult]:
         """识别单张图片，返回文字块列表
@@ -54,10 +58,12 @@ class OcrEngine:
         confidence_str: str 类型置信度
         """
         self.load()
+        logger.info("OCR 识别: %s", image_path.name)
         result, _ = self._ocr(str(image_path))
 
         items: List[OcrResult] = []
         if result is None:
+            logger.debug("  -> 未识别到文字")
             return items
 
         for box, text, conf_str in result:
@@ -66,4 +72,6 @@ class OcrEngine:
                 confidence=float(conf_str),
                 bbox=box,
             ))
+
+        logger.info("  -> 识别到 %d 个文字块", len(items))
         return items
