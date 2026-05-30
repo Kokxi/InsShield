@@ -155,5 +155,5 @@ class TestComputeStats:
         stats = compute_global_stats(results)
         assert stats.sensitive_files == 0
         assert stats.non_sensitive_files == 1
-        assert stats.life_sensitive_files == 1  # 人身险文件数，非涉敏计数
+        assert stats.life_sensitive_files == 0  # 无涉敏不计入
         assert stats.life_unique_persons == 0

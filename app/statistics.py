@@ -29,13 +29,12 @@ def compute_global_stats(results: List[FileResult]) -> GlobalStats:
         # 分支统计
         branch = r.insurance_branch
         if branch == "life":
-            stats.life_sensitive_files += 1
-            life_names = {p.name.strip() for p in r.persons if p.name.strip()}
-            stats.life_unique_persons += len(life_names)
+            if r.sensitive_count > 0:
+                stats.life_sensitive_files += 1
+            stats.life_unique_persons += len(r.persons)
         elif branch == "property":
             stats.property_files += 1
-            prop_names = {p.name.strip() for p in r.persons if p.name.strip()}
-            stats.property_sensitive_persons += len(prop_names)
+            stats.property_sensitive_persons += len(r.persons)
 
         # 异常文件
         if r.anomaly:

@@ -1,0 +1,139 @@
+[
+  {
+    "id": "life_same_person",
+    "description": "寿险-投保人=被保险人(同一人)",
+    "expected_persons": [
+      {
+        "name": "张三",
+        "role": "applicant",
+        "pii": [
+          "id_number",
+          "phone",
+          "birth_date",
+          "address"
+        ]
+      }
+    ],
+    "document_type": "life"
+  },
+  {
+    "id": "health_two_persons",
+    "description": "健康险-投保人!=被保险人",
+    "expected_persons": [
+      {
+        "name": "王五",
+        "role": "applicant",
+        "pii": [
+          "address",
+          "phone",
+          "id_number"
+        ]
+      },
+      {
+        "name": "赵六",
+        "role": "insured",
+        "pii": [
+          "address",
+          "phone",
+          "id_number",
+          "birth_date",
+          "health"
+        ]
+      }
+    ],
+    "document_type": "health"
+  },
+  {
+    "id": "accident_three_persons",
+    "description": "意外险-投保人+受益人",
+    "expected_persons": [
+      {
+        "name": "刘强",
+        "role": "applicant",
+        "pii": [
+          "id_number",
+          "phone",
+          "address"
+        ]
+      },
+      {
+        "name": "刘美丽",
+        "role": "beneficiary",
+        "pii": [
+          "id_number",
+          "phone",
+          "address"
+        ]
+      }
+    ],
+    "document_type": "accident"
+  },
+  {
+    "id": "car_insurance",
+    "description": "车险-财产险(投保人=被保险人)",
+    "expected_persons": [
+      {
+        "name": "陈伟",
+        "role": "applicant",
+        "pii": [
+          "id_number",
+          "phone",
+          "address"
+        ]
+      }
+    ],
+    "document_type": "car"
+  },
+  {
+    "id": "group_insurance",
+    "description": "团体险-投保人+2被保人",
+    "expected_persons": [
+      {
+        "name": "林经理",
+        "role": "applicant",
+        "pii": [
+          "phone",
+          "address"
+        ]
+      },
+      {
+        "name": "周杰",
+        "role": "insured",
+        "pii": [
+          "address",
+          "phone",
+          "id_number"
+        ]
+      },
+      {
+        "name": "吴芳",
+        "role": "insured",
+        "pii": [
+          "address",
+          "phone",
+          "id_number",
+          "health"
+        ]
+      }
+    ],
+    "document_type": "group"
+  },
+  {
+    "id": "simple_application",
+    "description": "简易投保单-单人",
+    "expected_persons": [
+      {
+        "name": "孙明",
+        "role": "applicant",
+        "pii": [
+          "id_number",
+          "phone",
+          "birth_date",
+          "address",
+          "health"
+        ]
+      }
+    ],
+    "document_type": "life"
+  }
+]
