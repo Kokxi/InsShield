@@ -13,6 +13,41 @@
     <p class="subtitle">上传 PDF、图片或 Word 文档，自动识别保险相关文件并提取涉敏人员信息</p>
   </header>
 
+  <!-- 核心理念：左右对齐 -->
+  <section class="concept-section">
+    <!-- 标题行 -->
+    <div class="c-row">
+      <h2 class="c-h2">找"字段" vs 找"人"</h2>
+      <h2 class="c-h2">同样的文件，不同的结果</h2>
+    </div>
+    <!-- 第一行：传统 -->
+    <div class="c-row">
+      <div class="diff-item diff-old">
+        <div class="diff-label">❌ 传统工具</div>
+        <div class="diff-desc">字段匹配——在文档中搜索身份证号、手机号、银行卡号等字段。它不关心这些信息属于谁，也不关心一份文档中提到的是一个人还是多个人。</div>
+      </div>
+      <div class="compare-card compare-card-old">
+        <div class="compare-card-title">传统工具扫描结果</div>
+        <div class="compare-card-body">✅ 找到身份证号 ×1，手机号 ×1，银行卡号 ×1  ===> 共 3 条数据</div>
+      </div>
+    </div>
+    <!-- 第二行：InsShield -->
+    <div class="c-row">
+      <div class="diff-item diff-new">
+        <div class="diff-label">✅ InsShield</div>
+        <div class="diff-desc">以个人信息主体为中心，将同一人的所有信息聚合为一条"个人记录"，直接输出法规要求的合规口径。</div>
+      </div>
+      <div class="compare-card compare-card-new">
+        <div class="compare-card-title">InsShield 扫描结果</div>
+        <div class="compare-card-body">
+          ✅ 张三：身份证号、手机号、家庭住址<br>
+          ✅ 李四：身份证号、银行卡号<br>
+          ===> 共 2 人（2 条个人记录）
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- 上传区域 -->
   <section class="upload-section">
     <div class="drop-zone" id="dropZone">
@@ -22,7 +57,9 @@
       <button class="btn" id="selectBtn">选择文件</button>
     </div>
     <div id="fileList" class="file-list"></div>
-    <button class="btn btn-primary" id="uploadBtn" disabled>开始识别</button>
+    <div class="upload-actions">
+      <button class="btn btn-primary btn-upload" id="uploadBtn" disabled>🚀 开始识别 <span class="btn-badge" id="fileCountBadge">0 个文件</span></button>
+    </div>
   </section>
 
   <!-- 进度指示 -->
@@ -36,6 +73,7 @@
   <!-- 统计概览 -->
   <section id="statsSection" class="stats-section" hidden>
     <div class="stats-row">
+      <!-- 全局统计 -->
       <div class="stats-card">
         <span class="stats-number" id="totalFiles">0</span>
         <span class="stats-label">总文件数</span>
@@ -48,17 +86,30 @@
         <span class="stats-number" id="globalPersons">0</span>
         <span class="stats-label">涉敏人数（去重）</span>
       </div>
-      <div class="stats-card stats-card-life">
-        <span class="stats-number" id="lifeStats">0</span>
-        <span class="stats-label" id="lifeStatsLabel">人身险涉敏</span>
-      </div>
-      <div class="stats-card stats-card-property">
-        <span class="stats-number" id="propertyStats">0</span>
-        <span class="stats-label" id="propertyStatsLabel">财产险文件</span>
-      </div>
       <div class="stats-card stats-card-anomaly">
         <span class="stats-number" id="anomalyFiles">0</span>
         <span class="stats-label">异常文件</span>
+      </div>
+    </div>
+    <div class="stats-group-header">
+      <span class="stats-group-line"></span>
+      <span class="stats-group-text">按险种细分</span>
+      <span class="stats-group-line"></span>
+    </div>
+    <div class="stats-row">
+      <div class="stats-card stats-card-life">
+        <span class="stats-number" id="lifeStats">0</span>
+        <div class="stats-meta">
+          <span class="stats-label" id="lifeStatsLabel">人身险涉敏文件</span>
+          <span class="stats-hint" id="lifePersonsHint">0 涉敏人数</span>
+        </div>
+      </div>
+      <div class="stats-card stats-card-property">
+        <span class="stats-number" id="propertyStats">0</span>
+        <div class="stats-meta">
+          <span class="stats-label" id="propertyStatsLabel">财产险涉敏文件</span>
+          <span class="stats-hint" id="propertyPersonsHint">0 涉敏人数</span>
+        </div>
       </div>
     </div>
   </section>

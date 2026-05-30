@@ -62,6 +62,7 @@ function handleFiles(files) {
     </div>
   `).join('');
 
+  document.getElementById('fileCountBadge').textContent = `${fileArray.length} 个文件`;
   uploadBtn.disabled = false;
 
   uploadBtn.onclick = async () => {
@@ -102,6 +103,9 @@ async function uploadAndRecognize(files) {
     renderStats(currentResults.stats);
     renderResultsTable(currentResults.results);
 
+    // 结果显示后进入紧凑布局
+    document.body.classList.add('has-results');
+
     progressFill.style.width = '100%';
     progressText.textContent = '识别完成';
 
@@ -125,12 +129,14 @@ function renderStats(stats) {
   document.getElementById('globalPersons').textContent = stats.global_unique_persons;
 
   // 人身险涉敏
-  document.getElementById('lifeStats').textContent = `${stats.life_sensitive_files}文件 ${stats.life_unique_persons}人`;
-  document.getElementById('lifeStatsLabel').textContent = '人身险涉敏';
+  document.getElementById('lifeStats').textContent = stats.life_sensitive_files;
+  document.getElementById('lifeStatsLabel').textContent = '人身险涉敏文件';
+  document.getElementById('lifePersonsHint').textContent = `${stats.life_unique_persons} 涉敏人数`;
 
   // 财产险
-  document.getElementById('propertyStats').textContent = `${stats.property_files}文件 ${stats.property_sensitive_persons}人`;
-  document.getElementById('propertyStatsLabel').textContent = '财产险';
+  document.getElementById('propertyStats').textContent = stats.property_files;
+  document.getElementById('propertyStatsLabel').textContent = '财产险文件总数';
+  document.getElementById('propertyPersonsHint').textContent = `${stats.property_sensitive_persons} 涉敏人数`;
 
   // 异常文件
   document.getElementById('anomalyFiles').textContent = stats.anomaly_files;
@@ -278,6 +284,7 @@ clearBtn.addEventListener('click', () => {
   currentResults = null;
   fileInput.value = '';
   fileList.innerHTML = '';
+  document.getElementById('fileCountBadge').textContent = '0 个文件';
   uploadBtn.disabled = true;
   progressSection.hidden = true;
   statsSection.hidden = true;

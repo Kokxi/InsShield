@@ -9,6 +9,68 @@ header { margin-bottom: 24px; }
 header h1 { font-size: 24px; color: #0984e3; }
 .subtitle { color: #636e72; font-size: 14px; margin-top: 4px; }
 
+/* 核心理念：左右对齐网格 */
+.concept-section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  margin-bottom: 20px;
+}
+.c-row {
+  display: grid;
+  grid-template-columns: 42% 1fr;
+  gap: 20px;
+}
+.c-row + .c-row {
+  margin-top: 10px;
+}
+.c-h2 {
+  font-size: 16px; color: #2d3436;
+  margin: 0;
+}
+
+/* 概念差异项 */
+.diff-item {
+  border-radius: 8px; padding: 12px 14px;
+  border: 1px solid #e0e0e0;
+}
+.diff-old {
+  background: #fafafa;
+}
+.diff-new {
+  background: #f0f8ff;
+  border-color: #b0d4f0;
+}
+.diff-label {
+  font-size: 13px; font-weight: 600;
+  margin-bottom: 4px;
+}
+.diff-desc {
+  font-size: 13px; color: #555;
+  line-height: 1.6;
+}
+
+/* 实际对比卡片 */
+.compare-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.compare-card-title {
+  font-size: 12px; font-weight: 600;
+  padding: 8px 12px;
+  background: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+}
+.compare-card-body {
+  padding: 10px 12px;
+  font-size: 13px; color: #444;
+  line-height: 1.6;
+}
+.compare-card-old .compare-card-title { color: #636e72; }
+.compare-card-new .compare-card-title { color: #0984e3; background: #eef6fd; }
+
 /* 上传区域 */
 .upload-section { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
 .drop-zone {
@@ -32,6 +94,23 @@ header h1 { font-size: 24px; color: #0984e3; }
 .btn-primary:hover { background: #0770c4; }
 .btn-primary:disabled { background: #b2bec3; border-color: #b2bec3; cursor: not-allowed; }
 
+/* 按钮操作区 */
+.upload-actions {
+  display: flex; justify-content: center;
+  margin-top: 20px;
+}
+.btn-upload {
+  font-size: 16px; padding: 12px 40px; min-width: 220px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  background: rgba(255,255,255,0.25);
+  border-radius: 10px;
+  font-size: 13px;
+}
+
 /* 进度 */
 .progress-section { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
 .progress-bar { height: 8px; background: #dfe6e9; border-radius: 4px; overflow: hidden; }
@@ -39,20 +118,30 @@ header h1 { font-size: 24px; color: #0984e3; }
 .progress-text { font-size: 13px; color: #636e72; margin-top: 8px; text-align: center; }
 
 /* 统计 */
-.stats-section { margin-bottom: 20px; }
-.stats-row { display: flex; gap: 16px; flex-wrap: wrap; }
+.stats-section { margin-bottom: 16px; }
+.stats-row { display: flex; gap: 12px; flex-wrap: wrap; }
 .stats-card {
-  flex: 1; min-width: 200px;
-  background: white; border-radius: 12px; padding: 24px; text-align: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  flex: 1; min-width: 140px;
+  background: white; border-radius: 10px; padding: 16px 12px; text-align: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 .stats-card-primary .stats-number { color: #0984e3; }
 .stats-card-sensitive .stats-number { color: #e17055; }
 .stats-card-life .stats-number { color: #00b894; }
 .stats-card-property .stats-number { color: #6c5ce7; }
 .stats-card-anomaly .stats-number { color: #d63031; }
-.stats-number { font-size: 48px; font-weight: bold; color: #636e72; display: block; }
-.stats-label { font-size: 14px; color: #636e72; margin-top: 4px; }
+.stats-number { font-size: 28px; font-weight: bold; color: #636e72; display: block; line-height: 1.2; }
+.stats-label { font-size: 12px; color: #636e72; margin-top: 2px; }
+.stats-meta { margin-top: 2px; }
+.stats-hint { display: block; font-size: 11px; color: #b2bec3; margin-top: 1px; }
+
+/* 按险种细分分组分隔线 */
+.stats-group-header {
+  display: flex; align-items: center; gap: 12px;
+  margin: 16px 0 10px 0;
+}
+.stats-group-line { flex: 1; height: 1px; background: #dfe6e9; }
+.stats-group-text { font-size: 12px; color: #b2bec3; white-space: nowrap; letter-spacing: 0.5px; }
 
 /* 结果表格 */
 .result-section { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
@@ -92,6 +181,26 @@ tr.row-anomaly:hover td { background: #ffe0e0; }
 /* 详情按钮 */
 .btn-detail { font-size: 12px; padding: 4px 12px; border-radius: 4px; border: 1px solid #0984e3; background: white; color: #0984e3; cursor: pointer; transition: all 0.2s; }
 .btn-detail:hover { background: #0984e3; color: white; }
+
+/* 结果显示后的紧凑布局 */
+.has-results .upload-section {
+  padding: 12px 20px; margin-bottom: 12px;
+}
+.has-results .drop-zone {
+  padding: 12px 20px;
+}
+.has-results .drop-text { font-size: 14px; margin-bottom: 4px; }
+.has-results .drop-hint { margin-bottom: 8px; }
+.has-results .upload-actions { margin-top: 10px; }
+.has-results .btn-upload { font-size: 14px; padding: 8px 28px; min-width: 160px; }
+.has-results .file-list { margin-top: 6px; }
+.has-results .stats-card { padding: 10px 8px; }
+.has-results .stats-number { font-size: 22px; }
+.has-results .stats-group-header { margin: 10px 0 6px 0; }
+.has-results .result-section { padding: 12px 16px; margin-bottom: 0; }
+.has-results .result-toolbar { margin-bottom: 8px; }
+.has-results .result-toolbar h2 { font-size: 14px; }
+.has-results .table-wrapper { max-height: calc(100vh - 520px); overflow-y: auto; }
 
 /* 右侧抽屉 */
 .drawer-overlay {
